@@ -269,7 +269,7 @@ function formatFullState(state: GameState): string {
     const cliCommands = [...new Set(available.map((a) => {
       const cli = actionToCli(a.action ?? "?");
       switch (a.action) {
-        case "play": return 'play <card> [--target <enemy>] or play card1,card2 target,card3';
+        case "play": return "play";
         case "use_potion": return 'use-potion "<name>" [--target "<enemy>"]';
         case "choose_reward": return "choose-reward <index>";
         case "choose_card": return 'choose-card "<name>"';
