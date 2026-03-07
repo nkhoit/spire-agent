@@ -67,7 +67,7 @@ export class SpireBridgeClient {
       p.reject(new Error("Connection closed"));
     }
     this.pending.clear();
-    this.ws?.close();
+    this.ws?.terminate();
     this.ws = null;
   }
 
