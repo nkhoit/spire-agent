@@ -269,7 +269,7 @@ function formatFullState(state: GameState): string {
     const cliCommands = [...new Set(available.map((a) => {
       const cli = actionToCli(a.action ?? "?");
       switch (a.action) {
-        case "play": return 'play "<card>" [--target "<enemy>"]';
+        case "play": return 'play <card> [--target <enemy>] or play card1,card2 target,card3';
         case "use_potion": return 'use-potion "<name>" [--target "<enemy>"]';
         case "choose_reward": return "choose-reward <index>";
         case "choose_card": return 'choose-card "<name>"';
@@ -400,6 +400,49 @@ export async function playCard(
 
   const targetStr = target ? ` on ${target}` : "";
   return `Played ${card.name}${targetStr}.` + await settledState(client, 1000);
+}
+
+export async function playCards(
+  client: SpireBridgeClient,
+  specs: string[]
+): Promise<string> {
+  const results: string[] = [];
+  for (const spec of specs) {
+    const parts = spec.trim().split(/\s+/);
+    const cardName = parts[0];
+    const target = parts.length > 1 ? parts.slice(1).join(" ") : undefined;
+    
+    const state = await client.getState();
+    const hand = getHand(state);
+    const result = resolveCard(hand, cardName);
+    if (!result) {
+      results.push(`Card '${cardName}' not found — stopping.`);
+      break;
+    }
+    const [cardIdx, card] = result;
+    const params: Record<string, unknown> = { card: cardIdx };
+    
+    if (target !== undefined) {
+      const enemies = getHittableEnemies(state);
+      const enemyIdx = resolveEnemy(enemies, target);
+      if (enemyIdx === null) {
+        results.push(`Target '${target}' not found for ${card.name} — stopping.`);
+        break;
+      }
+      params["target"] = enemyIdx;
+    }
+    
+    const resp = await client.send("play", params);
+    if (resp.status === "error") {
+      results.push(`Error playing ${card.name}: ${resp.error ?? resp.message} — stopping.`);
+      break;
+    }
+    await client.drainUpdates(500);
+    const targetStr = target ? ` on ${target}` : "";
+    results.push(`Played ${card.name}${targetStr}.`);
+  }
+  
+  return results.join("\n") + await settledState(client, 500);
 }
 
 export async function endTurn(client: SpireBridgeClient): Promise<string> {
