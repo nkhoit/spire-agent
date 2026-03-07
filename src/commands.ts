@@ -397,6 +397,19 @@ async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<s
     screen = getScreen(state);
   }
 
+  // Combat: wait for hand to stabilize (card draw / reshuffle animations)
+  if (screen === "combat") {
+    let prevHandSize = getHand(state).length;
+    const deadline = Date.now() + 3000;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 500));
+      state = await client.getState();
+      const handSize = getHand(state).length;
+      if (handSize === prevHandSize) break;
+      prevHandSize = handSize;
+    }
+  }
+
   // Auto-proceed if only parameterless action available
   const PARAMETERLESS = new Set(["proceed", "end_turn"]);
   const actions = (state.available_actions ?? []).filter(a => a.action !== "get_state");
