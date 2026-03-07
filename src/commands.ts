@@ -880,6 +880,18 @@ function fmtCardDetailed(card: Card): string {
 export async function cardInfo(client: SpireBridgeClient, cardName: string): Promise<string> {
   const state = await client.getState();
   const player = getPlayer(state);
+
+  // Support index-based lookup (hand cards)
+  const asNum = parseInt(cardName, 10);
+  if (!isNaN(asNum)) {
+    const hand = getHand(state);
+    if (asNum >= 0 && asNum < hand.length) {
+      const card = hand[asNum];
+      return fmtCardDetailed(card);
+    }
+    return `Index ${asNum} out of range (hand has ${getHand(state).length} cards).`;
+  }
+
   const lower = cardName.toLowerCase().replace(/\+$/, "");
 
   // Search all card pools: hand, deck, draw, discard, exhaust, card choices
