@@ -449,7 +449,9 @@ async function settledState(client: SpireBridgeClient, _prevScreen?: string): Pr
 
   // Auto-proceed if only parameterless action available
   // Track screen to prevent infinite loops (don't re-execute on same screen)
-  const PARAMETERLESS = new Set(["proceed", "end_turn"]);
+  // Never auto-execute end_turn — game state can be briefly stale after card
+  // animations, causing premature turn ends with playable cards still in hand.
+  const PARAMETERLESS = new Set(["proceed"]);
   const actions = (state.available_actions ?? []).filter(a => a.action !== "get_state" && a.action !== "discard_potion");
   // Map: auto-proceed to close overview (proceed closes the overview, revealing interactive map)
   if (screen === "map" && actions.some(a => a.action === "proceed") && actions.some(a => a.action === "choose_node")) {
@@ -492,7 +494,7 @@ export async function getGameState(client: SpireBridgeClient): Promise<string> {
 
   // Auto-execute if only one parameterless action available
   const actions = state.available_actions ?? [];
-  const PARAMETERLESS = new Set(["proceed", "end_turn", "get_state"]);
+  const PARAMETERLESS = new Set(["proceed", "get_state"]);
   const nonState = actions.filter(a => a.action !== "get_state");
   if (nonState.length === 1 && PARAMETERLESS.has(nonState[0].action ?? "")) {
     const action = nonState[0].action!;
