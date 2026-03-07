@@ -5,27 +5,14 @@ build-backend = "setuptools.backends._legacy:_Backend"
 [project]
 name = "spire-agent"
 version = "0.1.0"
-description = "AI agent for Slay the Spire 2 via SpireBridge"
+description = "MCP server for Slay the Spire 2 via SpireBridge"
 requires-python = ">=3.11"
 dependencies = [
     "websockets>=13.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    "ruff",
-    "pytest",
-]
-llm = [
-    "github-copilot-sdk",
-    "openai",
-]
-mcp = [
     "mcp",
 ]
 
 [project.scripts]
-spire-agent = "spire_agent.main:main"
 spire-mcp = "spire_agent.mcp_server:main"
 
 [tool.ruff]
