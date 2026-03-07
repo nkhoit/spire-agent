@@ -211,7 +211,9 @@ function formatFullState(state: GameState): string {
     }
     lines.push("\n--- Event Options ---");
     for (const o of eventOpts) {
-      const label = (o["label"] as string) ?? (o["text"] as string) ?? String(o["index"] ?? "?");
+      let label = (o["text"] as string) || (o["label"] as string) || (o["description"] as string) || "";
+      if (!label && o["is_proceed"]) label = "[Proceed]";
+      if (!label) label = String(o["index"] ?? "?");
       lines.push(`  [${o["index"] ?? "?"}] ${label}`);
     }
   }
@@ -551,7 +553,7 @@ export async function chooseEventOption(client: SpireBridgeClient, index: number
     return `Error choosing event option ${index}: ${resp.error ?? resp.message}`;
   }
 
-  return `Chose event option [${index}].` + await settledState(client, 1500);
+  return `Chose event option [${index}].` + await settledState(client, 2000);
 }
 
 export async function proceed(client: SpireBridgeClient): Promise<string> {
