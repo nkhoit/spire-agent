@@ -44,6 +44,15 @@ function actionToCli(action: string): string {
   return ACTION_TO_CLI[action] ?? action.replace(/_/g, "-");
 }
 
+function cleanDescription(desc: string): string {
+  return desc
+    .replace(/\{IfUpgraded:show:\|([^}]*)\}/gi, "$1")
+    .replace(/\{IfUpgraded:hide:\|([^}]*)\}/gi, "")
+    .replace(/\{[^}]+\}/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function fmtPileSummary(cards: Card[]): string {
   const counts: Record<string, number> = {};
   for (const c of cards) {
@@ -172,7 +181,7 @@ function formatFullState(state: GameState): string {
     lines.push("\n--- Card Choices ---");
     cardChoices.forEach((c, i) => {
       let line = `  [${i}] ${fmtCard(c)}`;
-      if (c.description) line += ` — ${c.description}`;
+      if (c.description) line += ` — ${cleanDescription(c.description)}`;
       lines.push(line);
     });
   }
@@ -582,7 +591,7 @@ function fmtCardDetailed(card: Card): string {
   if (card.block) lines.push(`  Block: ${card.block}`);
   if (card.rarity) lines.push(`  Rarity: ${card.rarity}`);
   if (card.exhausts) lines.push(`  Exhausts: yes`);
-  if (card.description) lines.push(`  ${card.description}`);
+  if (card.description) lines.push(`  ${cleanDescription(card.description)}`);
   return lines.join("\n");
 }
 
