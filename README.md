@@ -5,10 +5,16 @@ MCP server for Slay the Spire 2 via [SpireBridge](https://github.com/nkhoit/Spir
 ## Setup
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
+npm install && npm run build
 ```
+
+Or install globally:
+
+```bash
+npm install -g .
+```
+
+Then use `spire-mcp` and `spire-cli` directly.
 
 ## Usage
 
@@ -21,6 +27,19 @@ Add to your MCP config (`.copilot/mcp-config.json`, `.claude/mcp-config.json`, e
   "mcpServers": {
     "spire-bridge": {
       "command": "spire-mcp"
+    }
+  }
+}
+```
+
+Or without global install:
+
+```json
+{
+  "mcpServers": {
+    "spire-bridge": {
+      "command": "npx",
+      "args": ["--prefix", "/path/to/spire-agent", "spire-mcp"]
     }
   }
 }
@@ -64,8 +83,25 @@ MCP Client (LLM)           MCP Server              SpireBridge
 | `start_run` | Start a new run |
 | `abandon_run` | Abandon current run |
 
+## CLI
+
+```
+spire-cli state
+spire-cli play <card> [--target <enemy>]
+spire-cli end-turn
+spire-cli potion <name> [--target <enemy>]
+spire-cli map <type>
+spire-cli reward <index>
+spire-cli card-reward <name>
+spire-cli rest <action> [--card <name>]
+spire-cli event <index>
+spire-cli proceed
+spire-cli start [--character <name>]
+spire-cli abandon
+```
+
 ## Requirements
 
-- Python 3.11+
+- Node.js 18+
 - [SpireBridge](https://github.com/nkhoit/SpireBridge) v0.1.1+ mod in STS2
 - Slay the Spire 2 running on the same machine (or accessible via WebSocket)
