@@ -100,6 +100,24 @@ spire-cli start [--character <name>]
 spire-cli abandon
 ```
 
+### OpenClaw
+
+spire-agent includes an [OpenClaw](https://github.com/openclaw/openclaw) skill at `skill/SKILL.md`. Install it to let your OpenClaw assistant play Spire via CLI:
+
+```bash
+# In your OpenClaw workspace skills config, add:
+openclaw skills add /path/to/spire-agent/skill
+```
+
+The skill teaches the agent the CLI commands and gameplay loop. The agent will call `spire-cli` via `exec`, get the full game state back after each action, and make decisions autonomously.
+
+**How it works:**
+1. Each CLI command opens a WebSocket to SpireBridge, sends the action, waits for the game state to settle (via push events), and returns the full state
+2. The agent reads the state, decides what to do, and calls the next command
+3. No persistent connection needed — each invocation is self-contained
+
+**Requirements:** The game must be running on the same machine as OpenClaw (or the agent needs network access to the SpireBridge WebSocket at `ws://127.0.0.1:38642`).
+
 ## Requirements
 
 - Node.js 18+
