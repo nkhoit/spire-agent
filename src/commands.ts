@@ -359,8 +359,8 @@ function resolvePotion(potions: (Potion | null | undefined)[], potionName: strin
 // Post-action state helper
 // ---------------------------------------------------------------------------
 
-async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<string> {
-  // Wait for debounced state push from SpireBridge (settles after 500ms of no changes)
+async function settledState(client: SpireBridgeClient, waitMs = 2500): Promise<string> {
+  // Wait for debounced state push from SpireBridge (settles after 500ms of no changes, max 2s)
   await client.drainUpdates(waitMs);
   let state = client.lastState;
   if (!state) return "";
@@ -393,7 +393,7 @@ async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<s
     const resp = await client.send(action);
     if (resp.status !== "error") {
       const cli = ACTION_TO_CLI[action] ?? action;
-      const next = await settledState(client, 1000);
+      const next = await settledState(client);
       return `\n\n(Auto: ${cli})` + next;
     }
   }
@@ -420,7 +420,7 @@ export async function getGameState(client: SpireBridgeClient): Promise<string> {
     const resp = await client.send(action);
     if (resp.status !== "error") {
       const cli = ACTION_TO_CLI[action] ?? action;
-      return `(Auto-executed: ${cli})\n` + await settledState(client, 1000);
+      return `(Auto-executed: ${cli})\n` + await settledState(client);
     }
   }
 
@@ -460,7 +460,7 @@ export async function playCard(
   }
 
   const targetStr = target ? ` on ${target}` : "";
-  return `Played ${card.name}${targetStr}.` + await settledState(client, 1000);
+  return `Played ${card.name}${targetStr}.` + await settledState(client);
 }
 
 export async function playCards(
@@ -535,7 +535,7 @@ export async function playCards(
     results.push(`Played ${card.name}${targetStr}.`);
   }
   
-  return results.join("\n") + await settledState(client, 500);
+  return results.join("\n") + await settledState(client);
 }
 
 export async function endTurn(client: SpireBridgeClient): Promise<string> {
@@ -544,7 +544,7 @@ export async function endTurn(client: SpireBridgeClient): Promise<string> {
     return `Error ending turn: ${resp.error ?? resp.message}`;
   }
 
-  return `Turn ended.` + await settledState(client, 1500);
+  return `Turn ended.` + await settledState(client);
 }
 
 export async function usePotion(
@@ -582,7 +582,7 @@ export async function usePotion(
     return `Error using ${potion.name}: ${resp.error ?? resp.message}`;
   }
 
-  return `Used ${potion.name}.` + await settledState(client, 1000);
+  return `Used ${potion.name}.` + await settledState(client);
 }
 
 export async function chooseMapNode(client: SpireBridgeClient, nodeType: string): Promise<string> {
@@ -601,7 +601,7 @@ export async function chooseMapNode(client: SpireBridgeClient, nodeType: string)
     if (resp.status === "error") {
       return `Error choosing node: ${resp.error ?? resp.message}`;
     }
-    return `Navigated to ${node["type"]}.` + await settledState(client, 2000);
+    return `Navigated to ${node["type"]}.` + await settledState(client);
   }
 
   const lower = nodeType.toLowerCase();
@@ -620,7 +620,7 @@ export async function chooseMapNode(client: SpireBridgeClient, nodeType: string)
     return `Error choosing node: ${resp.error ?? resp.message}`;
   }
 
-  return `Navigated to ${node["type"]}.` + await settledState(client, 2000);
+  return `Navigated to ${node["type"]}.` + await settledState(client);
 }
 
 export async function chooseReward(client: SpireBridgeClient, index: number): Promise<string> {
@@ -629,7 +629,7 @@ export async function chooseReward(client: SpireBridgeClient, index: number): Pr
     return `Error choosing reward ${index}: ${resp.error ?? resp.message}`;
   }
 
-  return `Chose reward [${index}].` + await settledState(client, 1000);
+  return `Chose reward [${index}].` + await settledState(client);
 }
 
 export async function chooseCardReward(client: SpireBridgeClient, cardName: string): Promise<string> {
@@ -641,7 +641,7 @@ export async function chooseCardReward(client: SpireBridgeClient, cardName: stri
     if (resp.status === "error") {
       return `Error skipping: ${resp.error ?? resp.message}`;
     }
-    return "Skipped card reward." + await settledState(client, 1000);
+    return "Skipped card reward." + await settledState(client);
   }
 
   const cards = state.card_choices ?? [];
@@ -682,7 +682,7 @@ export async function chooseCardReward(client: SpireBridgeClient, cardName: stri
   const chosen = cards[matchIdx].name ?? `card[${matchIdx}]`;
   // Context-aware response based on screen type
   const action = screen === "card_select" ? "Selected" : "Added";
-  return `${action} ${chosen}.` + await settledState(client, 1000);
+  return `${action} ${chosen}.` + await settledState(client);
 }
 
 export async function restSiteAction(
@@ -733,13 +733,13 @@ export async function restSiteAction(
     }
     if (matchIdx !== null && upgradeActions.length > 0) {
       await client.send("choose_card", { index: matchIdx });
-      return `Upgraded ${cardName} at rest site.` + await settledState(client, 1000);
+      return `Upgraded ${cardName} at rest site.` + await settledState(client);
     } else if (matchIdx === null) {
-      return `Rested (smith selected) but card '${cardName}' not found in deck for upgrade.` + await settledState(client, 500);
+      return `Rested (smith selected) but card '${cardName}' not found in deck for upgrade.` + await settledState(client);
     }
   }
 
-  return `Performed '${action}' at rest site.` + await settledState(client, 500);
+  return `Performed '${action}' at rest site.` + await settledState(client);
 }
 
 export async function chooseEventOption(client: SpireBridgeClient, index: number): Promise<string> {
@@ -748,7 +748,7 @@ export async function chooseEventOption(client: SpireBridgeClient, index: number
     return `Error choosing event option ${index}: ${resp.error ?? resp.message}`;
   }
 
-  return `Chose event option [${index}].` + await settledState(client, 2000);
+  return `Chose event option [${index}].` + await settledState(client);
 }
 
 export async function shopBuy(client: SpireBridgeClient, index: number): Promise<string> {
@@ -756,7 +756,7 @@ export async function shopBuy(client: SpireBridgeClient, index: number): Promise
   if (resp.status === "error") {
     return `Error buying item ${index}: ${resp.error ?? resp.message}`;
   }
-  return `Bought item [${index}].` + await settledState(client, 1000);
+  return `Bought item [${index}].` + await settledState(client);
 }
 
 export async function proceed(client: SpireBridgeClient): Promise<string> {
@@ -765,7 +765,7 @@ export async function proceed(client: SpireBridgeClient): Promise<string> {
     return `Error proceeding: ${resp.error ?? resp.message}`;
   }
 
-  return `Proceeded.` + await settledState(client, 1000);
+  return `Proceeded.` + await settledState(client);
 }
 
 export async function startRun(client: SpireBridgeClient, character = "Ironclad"): Promise<string> {
@@ -779,7 +779,7 @@ export async function startRun(client: SpireBridgeClient, character = "Ironclad"
   if (screen) {
     return `Started run as ${character}.\n\n` + formatFullState(screen);
   }
-  return `Started run as ${character}.` + await settledState(client, 2000);
+  return `Started run as ${character}.` + await settledState(client);
 }
 
 export async function abandonRun(client: SpireBridgeClient): Promise<string> {
@@ -787,7 +787,7 @@ export async function abandonRun(client: SpireBridgeClient): Promise<string> {
   if (resp.status === "error") {
     return `Error abandoning run: ${resp.error ?? resp.message}`;
   }
-  return `Run abandoned.` + await settledState(client, 2000);
+  return `Run abandoned.` + await settledState(client);
 }
 
 export async function continueRun(client: SpireBridgeClient): Promise<string> {
@@ -795,7 +795,7 @@ export async function continueRun(client: SpireBridgeClient): Promise<string> {
   if (resp.status === "error") {
     return `Error continuing run: ${resp.error ?? resp.message}`;
   }
-  return `Run continued.` + await settledState(client, 2000);
+  return `Run continued.` + await settledState(client);
 }
 
 // ---------------------------------------------------------------------------
