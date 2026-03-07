@@ -122,6 +122,14 @@ program
   });
 
 program
+  .command("open-chest")
+  .description("Open a treasure chest")
+  .action(async () => {
+    const { url } = program.opts<{ url: string }>();
+    await run(url, (c) => commands.openChest(c));
+  });
+
+program
   .command("proceed")
   .description("Proceed/continue past current screen")
   .action(async () => {

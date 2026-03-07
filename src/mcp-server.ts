@@ -215,6 +215,17 @@ server.tool(
 );
 
 server.tool(
+  "open_chest",
+  "Open a treasure chest",
+  {},
+  async () => {
+    const client = await getClient();
+    const result = await commands.openChest(client);
+    return { content: [{ type: "text", text: result }] };
+  }
+);
+
+server.tool(
   "card_info",
   "Look up detailed information about a card by name — description, cost, damage, block, rarity, keywords. Searches hand, deck, and all piles.",
   {

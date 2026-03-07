@@ -853,6 +853,18 @@ export async function shopBuy(client: SpireBridgeClient, index: number): Promise
   return `Bought item [${index}].` + await settledState(client);
 }
 
+export async function openChest(client: SpireBridgeClient): Promise<string> {
+  debug("cmd", `openChest`);
+  const state = await client.getState();
+  const preScreen = getScreen(state);
+  const resp = await client.send("open_chest");
+  if (resp.status === "error") {
+    return `Error opening chest: ${resp.error ?? resp.message}`;
+  }
+
+  return `Opened chest.` + await settledState(client, preScreen);
+}
+
 export async function proceed(client: SpireBridgeClient): Promise<string> {
   debug("cmd", `proceed`);
   const state = await client.getState();
