@@ -4,6 +4,10 @@ export interface GameState {
   act?: number;
   player?: Player;
   enemies?: Enemy[];
+  combat?: {
+    is_player_turn?: boolean;
+    enemies?: Enemy[];
+  };
   available_actions?: Action[];
   card_choices?: Card[];
   rewards?: Reward[];

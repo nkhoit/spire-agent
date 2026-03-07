@@ -21,7 +21,7 @@ export function getHand(state: GameState): Card[] {
 }
 
 export function getEnemies(state: GameState): Enemy[] {
-  return state.enemies ?? [];
+  return state.combat?.enemies ?? state.enemies ?? [];
 }
 
 export function getHittableEnemies(state: GameState): Enemy[] {
