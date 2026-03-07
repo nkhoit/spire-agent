@@ -44,12 +44,16 @@ function actionToCli(action: string): string {
   return ACTION_TO_CLI[action] ?? action.replace(/_/g, "-");
 }
 
+function cardName(card: Card): string {
+  let name = card.name ?? "?";
+  if (card.upgraded && !name.endsWith("+")) name += "+";
+  return name;
+}
+
 function fmtPileSummary(cards: Card[]): string {
   const counts: Record<string, number> = {};
   for (const c of cards) {
-    let name = c.name ?? "?";
-    if (c.upgraded && !name.endsWith("+")) name += "+";
-    counts[name] = (counts[name] ?? 0) + 1;
+    counts[cardName(c)] = (counts[cardName(c)] ?? 0) + 1;
   }
   return Object.entries(counts)
     .sort(([a], [b]) => a.localeCompare(b))
@@ -58,8 +62,7 @@ function fmtPileSummary(cards: Card[]): string {
 }
 
 function fmtCard(card: Card): string {
-  let name = card.name ?? "?";
-  if (card.upgraded && !name.endsWith("+")) name += "+";
+  let name = cardName(card);
   if (card.cost !== undefined) name = `${name}(${card.cost})`;
   const parts = [name];
   if (card.damage) parts.push(`dmg:${card.damage}`);
@@ -193,9 +196,7 @@ function formatFullState(state: GameState): string {
     lines.push(`\n--- Deck (${deck.length} cards) ---`);
     const counts: Record<string, number> = {};
     for (const c of deck) {
-      let name = c.name ?? "?";
-      if (c.upgraded && !name.endsWith("+")) name += "+";
-      counts[name] = (counts[name] ?? 0) + 1;
+      counts[cardName(c)] = (counts[cardName(c)] ?? 0) + 1;
     }
     const deckParts = Object.entries(counts)
       .sort(([a], [b]) => a.localeCompare(b))
