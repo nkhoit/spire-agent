@@ -361,7 +361,7 @@ async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<s
   let state = client.lastState;
   if (!state) return "";
 
-  const screen = getScreen(state);
+  let screen = getScreen(state);
 
   // Retry loop for screens that load asynchronously
   const needsRetry = 
@@ -379,6 +379,15 @@ async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<s
       if (s === "combat" && getPlayer(state).energy !== undefined && getHand(state).length > 0) break;
       if (s !== screen) break;
     }
+    screen = getScreen(state);
+  }
+
+  // Stability check: re-fetch after a short delay to confirm screen hasn't changed
+  await new Promise((r) => setTimeout(r, 500));
+  const recheck = await client.getState();
+  if (getScreen(recheck) !== screen) {
+    state = recheck;
+    screen = getScreen(state);
   }
 
   // Auto-proceed if only parameterless action available
