@@ -164,9 +164,8 @@ function formatFullState(state: GameState): string {
   if (hand.length > 0) {
     lines.push(`\n--- Hand (${hand.length} cards) ---`);
     hand.forEach((card, i) => {
-      const cost = card.cost !== undefined ? `(${card.cost})` : "";
       const unplayable = card.playable === false ? " ✗" : "";
-      lines.push(`  [${i}] ${fmtCard(card)} ${cost}${unplayable}`);
+      lines.push(`  [${i}] ${fmtCard(card)}${unplayable}`);
     });
   }
 
