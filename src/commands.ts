@@ -232,7 +232,7 @@ function formatFullState(state: GameState): string {
     if (shopItemsList.length > 0) {
       for (const item of shopItemsList) {
         const cost = item.cost ?? "?";
-        const affordable = item.affordable === false ? " [can't afford]" : "";
+        const affordable = item.affordable === false ? " ✗ Can't afford" : "";
         const name = (item.name as string) ?? "item";
         const desc = (item.description as string) ? ` — ${item.description}` : "";
         const type = (item.type as string) ?? "";
@@ -243,7 +243,7 @@ function formatFullState(state: GameState): string {
     } else {
       for (const item of shopActions) {
         const cost = item["cost"] ?? "?";
-        const affordable = item["affordable"] ? "" : " [can't afford]";
+        const affordable = item["affordable"] ? "" : " ✗ Can't afford";
         const desc = (item["description"] as string)?.replace(/^Buy /, "") ?? `item (${cost}g)`;
         lines.push(`  [${item["index"]}] ${desc}${affordable}`);
       }
