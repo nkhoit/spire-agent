@@ -456,7 +456,8 @@ async function settledState(client: SpireBridgeClient, _prevScreen?: string): Pr
     debug("settle", `map overview detected, auto-proceeding to close`);
     const resp = await client.send("proceed");
     if (resp.status !== "error") {
-      const next = await settledState(client, "map");
+      // Don't pass "map" as prevScreen — map IS the final destination after closing overview
+      const next = await settledState(client);
       return `\n\n(Auto: proceed)` + next;
     }
   }
@@ -664,7 +665,7 @@ export async function usePotion(
       const available = enemies.map((e) => e.name ?? "?").join(", ");
       return `Target '${target}' not found. Available enemies: ${available}`;
     }
-    params["target"] = enemyIdx;
+    params["target_index"] = enemyIdx;
   }
 
   const resp = await client.send("use_potion", params);
