@@ -47,16 +47,6 @@ function fmtEnemy(enemy: Enemy): string {
   return `${name} ${hp}/${maxHp}${blockStr}${intentStr}`;
 }
 
-function briefCombatState(state: GameState): string {
-  const [hp, maxHp] = playerHp(state);
-  const energy = playerEnergy(state);
-  const block = getPlayer(state).block ?? 0;
-  const blockStr = block ? ` 🛡${block}` : "";
-  const enemies = getEnemies(state);
-  const enemyStr = enemies.length > 0 ? enemies.map(fmtEnemy).join(", ") : "none";
-  return `HP: ${hp}/${maxHp}${blockStr} | Energy: ${energy} | Enemies: ${enemyStr}`;
-}
-
 function formatFullState(state: GameState): string {
   const lines: string[] = [];
   const screen = getScreen(state);
@@ -205,6 +195,17 @@ function resolvePotion(potions: (Potion | null | undefined)[], potionName: strin
 }
 
 // ---------------------------------------------------------------------------
+// Post-action state helper
+// ---------------------------------------------------------------------------
+
+async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<string> {
+  await client.drainUpdates(waitMs);
+  const state = client.lastState;
+  if (!state) return "";
+  return "\n\n" + formatFullState(state);
+}
+
+// ---------------------------------------------------------------------------
 // Command functions
 // ---------------------------------------------------------------------------
 
@@ -248,11 +249,8 @@ export async function playCard(
     return `Error playing ${card.name}: ${resp.error ?? resp.message}`;
   }
 
-  await client.drainUpdates(1000);
-  const newState = client.lastState ?? state;
   const targetStr = target ? ` on ${target}` : "";
-  const brief = briefCombatState(newState);
-  return `Played ${card.name}${targetStr}. ${brief}`;
+  return `Played ${card.name}${targetStr}.` + await settledState(client, 1000);
 }
 
 export async function endTurn(client: SpireBridgeClient): Promise<string> {
@@ -261,14 +259,7 @@ export async function endTurn(client: SpireBridgeClient): Promise<string> {
     return `Error ending turn: ${resp.error ?? resp.message}`;
   }
 
-  await client.drainUpdates(1500);
-  const newState = client.lastState;
-  if (newState) {
-    const screen = getScreen(newState);
-    if (screen === "combat") return `Turn ended. ${briefCombatState(newState)}`;
-    return `Turn ended. Screen: ${screen}`;
-  }
-  return "Turn ended.";
+  return `Turn ended.` + await settledState(client, 1500);
 }
 
 export async function usePotion(
@@ -306,9 +297,7 @@ export async function usePotion(
     return `Error using ${potion.name}: ${resp.error ?? resp.message}`;
   }
 
-  await client.drainUpdates(1000);
-  const newState = client.lastState ?? state;
-  return `Used ${potion.name}. ${briefCombatState(newState)}`;
+  return `Used ${potion.name}.` + await settledState(client, 1000);
 }
 
 export async function chooseMapNode(client: SpireBridgeClient, nodeType: string): Promise<string> {
@@ -335,10 +324,7 @@ export async function chooseMapNode(client: SpireBridgeClient, nodeType: string)
     return `Error choosing node: ${resp.error ?? resp.message}`;
   }
 
-  await client.drainUpdates(2000);
-  const newState = client.lastState ?? state;
-  const screen = getScreen(newState);
-  return `Navigated to ${node["type"]} at row ${node["row"]}, col ${node["col"]}. Now on screen: ${screen}`;
+  return `Navigated to ${node["type"]} at row ${node["row"]}, col ${node["col"]}.` + await settledState(client, 2000);
 }
 
 export async function chooseReward(client: SpireBridgeClient, index: number): Promise<string> {
@@ -347,10 +333,7 @@ export async function chooseReward(client: SpireBridgeClient, index: number): Pr
     return `Error choosing reward ${index}: ${resp.error ?? resp.message}`;
   }
 
-  await client.drainUpdates(1000);
-  const newState = client.lastState;
-  const screen = newState ? getScreen(newState) : "unknown";
-  return `Chose reward [${index}]. Screen: ${screen}`;
+  return `Chose reward [${index}].` + await settledState(client, 1000);
 }
 
 export async function chooseCardReward(client: SpireBridgeClient, cardName: string): Promise<string> {
@@ -361,8 +344,7 @@ export async function chooseCardReward(client: SpireBridgeClient, cardName: stri
     if (resp.status === "error") {
       return `Error skipping: ${resp.error ?? resp.message}`;
     }
-    await client.drainUpdates(1000);
-    return "Skipped card reward.";
+    return "Skipped card reward." + await settledState(client, 1000);
   }
 
   const cards = state.card_choices ?? [];
@@ -390,9 +372,8 @@ export async function chooseCardReward(client: SpireBridgeClient, cardName: stri
     return `Error choosing card: ${resp.error ?? resp.message}`;
   }
 
-  await client.drainUpdates(1000);
   const chosen = cards[matchIdx].name ?? `card[${matchIdx}]`;
-  return `Added ${chosen} to deck.`;
+  return `Added ${chosen} to deck.` + await settledState(client, 1000);
 }
 
 export async function restSiteAction(
@@ -443,14 +424,13 @@ export async function restSiteAction(
     }
     if (matchIdx !== null && upgradeActions.length > 0) {
       await client.send("choose_card", { index: matchIdx });
-      await client.drainUpdates(1000);
-      return `Upgraded ${cardName} at rest site.`;
+      return `Upgraded ${cardName} at rest site.` + await settledState(client, 1000);
     } else if (matchIdx === null) {
-      return `Rested (smith selected) but card '${cardName}' not found in deck for upgrade.`;
+      return `Rested (smith selected) but card '${cardName}' not found in deck for upgrade.` + await settledState(client, 500);
     }
   }
 
-  return `Performed '${action}' at rest site.`;
+  return `Performed '${action}' at rest site.` + await settledState(client, 500);
 }
 
 export async function chooseEventOption(client: SpireBridgeClient, index: number): Promise<string> {
@@ -459,10 +439,7 @@ export async function chooseEventOption(client: SpireBridgeClient, index: number
     return `Error choosing event option ${index}: ${resp.error ?? resp.message}`;
   }
 
-  await client.drainUpdates(1500);
-  const newState = client.lastState;
-  const screen = newState ? getScreen(newState) : "unknown";
-  return `Chose event option [${index}]. Screen: ${screen}`;
+  return `Chose event option [${index}].` + await settledState(client, 1500);
 }
 
 export async function proceed(client: SpireBridgeClient): Promise<string> {
@@ -471,10 +448,7 @@ export async function proceed(client: SpireBridgeClient): Promise<string> {
     return `Error proceeding: ${resp.error ?? resp.message}`;
   }
 
-  await client.drainUpdates(1000);
-  const newState = client.lastState;
-  const screen = newState ? getScreen(newState) : "unknown";
-  return `Proceeded. Screen: ${screen}`;
+  return `Proceeded.` + await settledState(client, 1000);
 }
 
 export async function startRun(client: SpireBridgeClient, character = "Ironclad"): Promise<string> {
@@ -483,10 +457,7 @@ export async function startRun(client: SpireBridgeClient, character = "Ironclad"
     return `Error starting run: ${resp.error ?? resp.message}`;
   }
 
-  await client.drainUpdates(2000);
-  const newState = client.lastState;
-  const screen = newState ? getScreen(newState) : "unknown";
-  return `Started run as ${character}. Screen: ${screen}`;
+  return `Started run as ${character}.` + await settledState(client, 2000);
 }
 
 export async function abandonRun(client: SpireBridgeClient): Promise<string> {
@@ -495,8 +466,5 @@ export async function abandonRun(client: SpireBridgeClient): Promise<string> {
     return `Error abandoning run: ${resp.error ?? resp.message}`;
   }
 
-  await client.drainUpdates(2000);
-  const newState = client.lastState;
-  const screen = newState ? getScreen(newState) : "unknown";
-  return `Run abandoned. Screen: ${screen}`;
+  return `Run abandoned.` + await settledState(client, 2000);
 }
