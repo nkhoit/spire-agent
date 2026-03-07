@@ -372,12 +372,18 @@ async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<s
 
   if (needsRetry) {
     const deadline = Date.now() + 5000;
+    let prevHandSize = -1;
     while (Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 500));
       state = await client.getState();
       const s = getScreen(state);
       if (s === "event" && findActions(state, "choose_option").length > 0) break;
-      if (s === "combat" && getPlayer(state).energy !== undefined && getHand(state).length > 0) break;
+      if (s === "combat") {
+        const p = getPlayer(state);
+        const handSize = getHand(state).length;
+        if (p.energy !== undefined && handSize > 0 && handSize === prevHandSize) break;
+        prevHandSize = handSize;
+      }
       if (s !== screen) break;
     }
     screen = getScreen(state);
