@@ -96,7 +96,19 @@ function fmtEnemy(enemy: Enemy): string {
   
   const block = enemy.block ?? 0;
   const blockStr = block ? ` 🛡${block}` : "";
-  return `${name} ${hp}/${maxHp}${blockStr}${intentStr}`;
+  
+  const powers = (enemy as unknown as Record<string, unknown>).powers as Array<Record<string, unknown>> | undefined;
+  let powerStr = "";
+  if (powers && powers.length > 0) {
+    const ps = powers.map(p => {
+      const name = p.name as string ?? p.id as string ?? "?";
+      const amt = p.amount as number;
+      return amt && amt !== 1 ? `${name} ${amt}` : name;
+    });
+    powerStr = ` (${ps.join(", ")})`;
+  }
+  
+  return `${name} ${hp}/${maxHp}${blockStr}${intentStr}${powerStr}`;
 }
 
 function formatFullState(state: GameState): string {
@@ -118,6 +130,17 @@ function formatFullState(state: GameState): string {
   if (energy !== undefined) playerLine += `  Energy: ${energy}${maxEnergy !== undefined ? `/${maxEnergy}` : ""}`;
   if (block) playerLine += `  Block: ${block}`;
   lines.push(playerLine);
+
+  // Player powers/status effects
+  const powers = (player as unknown as Record<string, unknown>).powers as Array<Record<string, unknown>> | undefined;
+  if (powers && powers.length > 0) {
+    const powerStrs = powers.map(p => {
+      const name = p.name as string ?? p.id as string ?? "?";
+      const amt = p.amount as number;
+      return amt && amt !== 1 ? `${name} ${amt}` : name;
+    });
+    lines.push(`Status: ${powerStrs.join(", ")}`);
+  }
 
   const relics = player.relics ?? [];
   if (relics.length > 0) {
