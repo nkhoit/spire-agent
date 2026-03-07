@@ -211,9 +211,13 @@ function formatFullState(state: GameState): string {
     }
     lines.push("\n--- Event Options ---");
     for (const o of eventOpts) {
-      let label = (o["text"] as string) || (o["label"] as string) || (o["description"] as string) || "";
+      let label = (o["text"] as string) || (o["label"] as string) || "";
+      if (!label) {
+        const desc = (o["description"] as string) || "";
+        if (desc && desc !== "Choose: ") label = desc;
+      }
       if (!label && o["is_proceed"]) label = "[Proceed]";
-      if (!label) label = String(o["index"] ?? "?");
+      if (!label) label = "[Continue]";
       lines.push(`  [${o["index"] ?? "?"}] ${label}`);
     }
   }
