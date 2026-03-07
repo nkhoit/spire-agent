@@ -451,6 +451,16 @@ async function settledState(client: SpireBridgeClient, _prevScreen?: string): Pr
   // Track screen to prevent infinite loops (don't re-execute on same screen)
   const PARAMETERLESS = new Set(["proceed", "end_turn"]);
   const actions = (state.available_actions ?? []).filter(a => a.action !== "get_state" && a.action !== "discard_potion");
+  // Map: auto-proceed to close overview (proceed closes the overview, revealing interactive map)
+  if (screen === "map" && actions.some(a => a.action === "proceed") && actions.some(a => a.action === "choose_node")) {
+    debug("settle", `map overview detected, auto-proceeding to close`);
+    const resp = await client.send("proceed");
+    if (resp.status !== "error") {
+      const next = await settledState(client, "map");
+      return `\n\n(Auto: proceed)` + next;
+    }
+  }
+
   debug("settle", `auto-exec check: actions=[${actions.map(a=>a.action)}] screen=${screen} prevScreen=${_prevScreen}`);
   if (actions.length === 1 && PARAMETERLESS.has(actions[0].action ?? "") && screen !== _prevScreen) {
     const action = actions[0].action!;
