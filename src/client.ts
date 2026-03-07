@@ -91,13 +91,15 @@ export class SpireBridgeClient {
 
       this.pending.set(rid, {
         resolve: (msg) => {
-          resolve({
+          const resp = {
             id: (msg["id"] as string) ?? rid,
             status: (msg["status"] as string) ?? "unknown",
             data: (msg["data"] as GameState) ?? null,
             error: msg["error"] as string | undefined,
             message: msg["message"] as string | undefined,
-          });
+          };
+          debug("ws", `recv id=${resp.id} status=${resp.status}${resp.error ? ` error=${resp.error}` : ""}`);
+          resolve(resp);
         },
         reject: (err) => {
           resolve({ id: rid, status: "error", error: err.message });
