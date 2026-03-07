@@ -360,57 +360,28 @@ function resolvePotion(potions: (Potion | null | undefined)[], potionName: strin
 // ---------------------------------------------------------------------------
 
 async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<string> {
+  // Wait for debounced state push from SpireBridge (settles after 500ms of no changes)
   await client.drainUpdates(waitMs);
   let state = client.lastState;
   if (!state) return "";
 
   let screen = getScreen(state);
 
-  // Retry loop for screens that load asynchronously
-  const needsRetry = 
+  // Light safety net: if state looks incomplete, poll briefly
+  // SpireBridge debounce handles most timing, this catches edge cases
+  const looksIncomplete =
     (screen === "event" && findActions(state, "choose_option").length === 0) ||
-    (screen === "combat" && getPlayer(state).energy === undefined) ||
-    (screen === "combat" && getHand(state).length === 0 && (getPlayer(state).energy ?? 0) === 0) ||
-    (screen === "map" && findActions(state, "choose_node").length === 0 && findActions(state, "proceed").length > 0);
+    (screen === "combat" && getPlayer(state).energy === undefined);
 
-  if (needsRetry) {
-    const deadline = Date.now() + 5000;
-    let prevHandSize = -1;
-    while (Date.now() < deadline) {
-      await new Promise((r) => setTimeout(r, 500));
-      state = await client.getState();
-      const s = getScreen(state);
-      if (s === "event" && findActions(state, "choose_option").length > 0) break;
-      if (s === "map" && findActions(state, "choose_node").length > 0) break;
-      if (s === "combat") {
-        const p = getPlayer(state);
-        const handSize = getHand(state).length;
-        if (p.energy !== undefined && handSize > 0 && handSize === prevHandSize) break;
-        prevHandSize = handSize;
-      }
-      if (s !== screen) break;
-    }
-    screen = getScreen(state);
-  }
-
-  // Stability check: re-fetch after a short delay to confirm screen hasn't changed
-  await new Promise((r) => setTimeout(r, 500));
-  const recheck = await client.getState();
-  if (getScreen(recheck) !== screen) {
-    state = recheck;
-    screen = getScreen(state);
-  }
-
-  // Combat: wait for hand to stabilize (card draw / reshuffle animations)
-  if (screen === "combat") {
-    let prevHandSize = getHand(state).length;
+  if (looksIncomplete) {
     const deadline = Date.now() + 3000;
     while (Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 500));
       state = await client.getState();
-      const handSize = getHand(state).length;
-      if (handSize === prevHandSize) break;
-      prevHandSize = handSize;
+      screen = getScreen(state);
+      if (screen === "event" && findActions(state, "choose_option").length > 0) break;
+      if (screen === "combat" && getPlayer(state).energy !== undefined) break;
+      if (screen !== getScreen(client.lastState ?? state)) break;
     }
   }
 
