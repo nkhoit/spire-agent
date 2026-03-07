@@ -18,6 +18,12 @@ export interface Player {
   block?: number;
   hand?: Card[];
   deck?: Card[];
+  draw_pile?: Card[];
+  draw_pile_count?: number;
+  discard_pile?: Card[];
+  discard_pile_count?: number;
+  exhaust_pile?: Card[];
+  exhaust_pile_count?: number;
   relics?: Relic[];
   potions?: Potion[];
 }

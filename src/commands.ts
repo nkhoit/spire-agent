@@ -21,6 +21,18 @@ const NOTES_PATH = join(__dirname, "..", "notes.md");
 // Formatting helpers
 // ---------------------------------------------------------------------------
 
+function fmtPileSummary(cards: Card[]): string {
+  const counts: Record<string, number> = {};
+  for (const c of cards) {
+    const name = c.name ?? "?";
+    counts[name] = (counts[name] ?? 0) + 1;
+  }
+  return Object.entries(counts)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, n]) => (n > 1 ? `${name} x${n}` : name))
+    .join(", ");
+}
+
 function fmtCard(card: Card): string {
   let name = card.name ?? "?";
   if (card.cost !== undefined) name = `${name}(${card.cost})`;
@@ -94,6 +106,25 @@ function formatFullState(state: GameState): string {
       const playable = card.playable !== false ? "✓" : "✗";
       lines.push(`  [${i}] ${playable} ${fmtCard(card)}`);
     });
+  }
+
+  // Combat piles (only during combat)
+  const drawPile = player.draw_pile ?? [];
+  const discardPile = player.discard_pile ?? [];
+  const exhaustPile = player.exhaust_pile ?? [];
+  if (drawPile.length > 0 || discardPile.length > 0 || exhaustPile.length > 0) {
+    if (drawPile.length > 0) {
+      lines.push(`\n--- Draw Pile (${drawPile.length}) ---`);
+      lines.push(`  ${fmtPileSummary(drawPile)}`);
+    }
+    if (discardPile.length > 0) {
+      lines.push(`\n--- Discard Pile (${discardPile.length}) ---`);
+      lines.push(`  ${fmtPileSummary(discardPile)}`);
+    }
+    if (exhaustPile.length > 0) {
+      lines.push(`\n--- Exhaust Pile (${exhaustPile.length}) ---`);
+      lines.push(`  ${fmtPileSummary(exhaustPile)}`);
+    }
   }
 
   const deck = player.deck ?? [];
