@@ -456,9 +456,11 @@ async function settledState(client: SpireBridgeClient, _prevScreen?: string): Pr
     debug("settle", `map overview detected, auto-proceeding to close`);
     const resp = await client.send("proceed");
     if (resp.status !== "error") {
-      // Don't pass "map" as prevScreen — map IS the final destination after closing overview
-      const next = await settledState(client);
-      return `\n\n(Auto: proceed)` + next;
+      // After closing map overview, drain the push and return directly.
+      // Don't recurse into settledState — map IS the final destination.
+      await client.drainUpdates();
+      const mapState = client.lastState;
+      return `\n\n(Auto: proceed)\n\n` + formatFullState(mapState!);
     }
   }
 
