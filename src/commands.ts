@@ -435,8 +435,18 @@ export async function chooseCardReward(client: SpireBridgeClient, cardName: stri
 
   const lower = cardName.toLowerCase();
   let matchIdx: number | null = null;
-  for (let i = 0; i < cards.length; i++) {
-    if ((cards[i].name ?? "").toLowerCase() === lower) { matchIdx = i; break; }
+
+  // Support index-based selection
+  const asNum = parseInt(cardName, 10);
+  if (!isNaN(asNum) && asNum >= 0 && asNum < cards.length) {
+    matchIdx = asNum;
+  }
+
+  // Name matching (exact then partial)
+  if (matchIdx === null) {
+    for (let i = 0; i < cards.length; i++) {
+      if ((cards[i].name ?? "").toLowerCase() === lower) { matchIdx = i; break; }
+    }
   }
   if (matchIdx === null) {
     for (let i = 0; i < cards.length; i++) {
