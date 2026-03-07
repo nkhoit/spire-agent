@@ -14,6 +14,7 @@ dependencies = [
 
 [project.scripts]
 spire-mcp = "spire_agent.mcp_server:main"
+spire-cli = "spire_agent.cli:main"
 
 [tool.ruff]
 line-length = 100
