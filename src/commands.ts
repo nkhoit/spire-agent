@@ -358,7 +358,7 @@ async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<s
   }
 
   // Auto-proceed if only parameterless action available
-  const PARAMETERLESS = new Set(["proceed"]);
+  const PARAMETERLESS = new Set(["proceed", "end_turn"]);
   const actions = (state.available_actions ?? []).filter(a => a.action !== "get_state");
   if (actions.length === 1 && PARAMETERLESS.has(actions[0].action ?? "")) {
     const action = actions[0].action!;
