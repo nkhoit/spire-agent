@@ -43,25 +43,16 @@ program
   });
 
 program
-  .command("play <cards...>")
-  .description("Play one or more cards. Use commas to separate: play strike,bash target,defend")
-  .option("--target <enemy>", "Target enemy name (for single card)")
-  .action(async (cards: string[], opts: { target?: string }) => {
+  .command("play <card> [target]")
+  .description("Play a card, optionally targeting an enemy. Use commas for multi-play: play \"0 3,4 3\"")
+  .action(async (card: string, target: string | undefined) => {
     const { url } = program.opts<{ url: string }>();
-    const joined = cards.join(" ");
-    const specs = joined.includes(",") ? joined.split(",") : cards.length === 1 ? [joined] : cards;
-    if (specs.length === 1 && !specs[0].includes(" ")) {
-      await run(url, (c) => commands.playCard(c, specs[0].trim(), opts.target));
+    if (card.includes(",")) {
+      // Multi-play: comma-separated specs with inline targets
+      const specs = card.split(",").map(s => s.trim());
+      await run(url, (c) => commands.playCards(c, specs));
     } else {
-      // Append --target to each spec that doesn't already have a target
-      const finalSpecs = specs.map(s => {
-        const trimmed = s.trim();
-        if (opts.target && !trimmed.includes(" ")) {
-          return `${trimmed} ${opts.target}`;
-        }
-        return trimmed;
-      });
-      await run(url, (c) => commands.playCards(c, finalSpecs));
+      await run(url, (c) => commands.playCard(c, card.trim(), target?.trim()));
     }
   });
 
