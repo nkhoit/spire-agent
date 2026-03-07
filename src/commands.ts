@@ -418,20 +418,18 @@ async function settledState(client: SpireBridgeClient, _prevScreen?: string): Pr
     }
   }
 
-  // Combat: wait for hand to stabilize (card draw animations)
+  // Combat: wait for player's play phase (enemy animations + card draw must complete)
   if (screen === "combat") {
-    let prevHandSize = getHand(state).length;
-    let energy = getPlayer(state).energy;
-    const deadline = Date.now() + 5000;
+    const deadline = Date.now() + 8000;
     while (Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 500));
       state = await client.getState();
-      const handSize = getHand(state).length;
-      energy = getPlayer(state).energy;
-      debug("settle", `hand stabilize: prev=${prevHandSize} cur=${handSize} energy=${energy}`);
-      // Need energy > 0 AND hand > 0 AND stable
-      if (energy !== undefined && energy > 0 && handSize > 0 && handSize === prevHandSize) break;
-      prevHandSize = handSize;
+      const hand = getHand(state);
+      const energy = getPlayer(state).energy;
+      const actions = (state.available_actions ?? []).filter(a => a.action !== "get_state" && a.action !== "discard_potion");
+      const hasPlayActions = actions.some(a => a.action === "play" || a.action === "end_turn");
+      debug("settle", `combat wait: hand=${hand.length} energy=${energy} hasPlay=${hasPlayActions}`);
+      if (hasPlayActions && hand.length > 0) break;
     }
   }
 
