@@ -6,7 +6,7 @@ import asyncio
 
 from .base import LLMProvider
 
-DEFAULT_MODEL = "claude-sonnet-4"
+DEFAULT_MODEL = "claude-sonnet-4.6"
 
 
 class CopilotProvider(LLMProvider):
