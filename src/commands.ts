@@ -387,16 +387,17 @@ async function settledState(client: SpireBridgeClient, _prevScreen?: string): Pr
   let screen = getScreen(state);
   debug("settle", `after drain: screen=${screen} actions=${(state.available_actions ?? []).map(a => a.action).join(",")}`);
 
-  // If push state looks stale (same screen as before action), do an active getState poll
-  if (_prevScreen && screen === _prevScreen) {
-    debug("settle", `stale screen detected, polling getState`);
-    const deadline = Date.now() + 3000;
+  // If push state looks stale or transitional, do an active getState poll
+  const isStale = (_prevScreen && screen === _prevScreen) || screen === "unknown";
+  if (isStale) {
+    debug("settle", `stale/transitional screen detected (screen=${screen} prev=${_prevScreen}), polling getState`);
+    const deadline = Date.now() + 5000;
     while (Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 500));
       state = await client.getState();
       screen = getScreen(state);
       debug("settle", `poll: screen=${screen}`);
-      if (screen !== _prevScreen) break;
+      if (screen !== "unknown" && screen !== _prevScreen) break;
     }
   }
 
