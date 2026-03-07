@@ -439,8 +439,32 @@ export async function playCards(
   client: SpireBridgeClient,
   specs: string[]
 ): Promise<string> {
+  // Pre-resolve indices to names using current hand (before any cards are played)
+  const preState = await client.getState();
+  const preHand = getHand(preState);
+  const resolvedSpecs = specs.map(spec => {
+    const parts = spec.trim().split(/\s+/);
+    const cardRef = parts[0];
+    const idx = parseInt(cardRef, 10);
+    if (!isNaN(idx) && idx >= 0 && idx < preHand.length) {
+      parts[0] = preHand[idx].name ?? cardRef;
+    }
+    // Also resolve target index to name
+    if (parts.length > 1) {
+      const targetIdx = parseInt(parts.slice(1).join(" "), 10);
+      if (!isNaN(targetIdx)) {
+        const enemies = getHittableEnemies(preState);
+        if (targetIdx >= 0 && targetIdx < enemies.length) {
+          parts[1] = enemies[targetIdx].name ?? parts[1];
+          parts.length = 2;
+        }
+      }
+    }
+    return parts.join(" ");
+  });
+
   const results: string[] = [];
-  for (const spec of specs) {
+  for (const spec of resolvedSpecs) {
     const parts = spec.trim().split(/\s+/);
     const cardName = parts[0];
     const target = parts.length > 1 ? parts.slice(1).join(" ") : undefined;
