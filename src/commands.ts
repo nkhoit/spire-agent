@@ -59,7 +59,7 @@ function fmtPileSummary(cards: Card[]): string {
 
 function fmtCard(card: Card): string {
   let name = card.name ?? "?";
-  if (card.upgraded) name += "+";
+  if (card.upgraded && !name.endsWith("+")) name += "+";
   if (card.cost !== undefined) name = `${name}(${card.cost})`;
   const parts = [name];
   if (card.damage) parts.push(`dmg:${card.damage}`);
