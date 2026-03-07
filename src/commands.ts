@@ -357,6 +357,19 @@ async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<s
     }
   }
 
+  // Auto-proceed if only parameterless action available
+  const PARAMETERLESS = new Set(["proceed"]);
+  const actions = (state.available_actions ?? []).filter(a => a.action !== "get_state");
+  if (actions.length === 1 && PARAMETERLESS.has(actions[0].action ?? "")) {
+    const action = actions[0].action!;
+    const resp = await client.send(action);
+    if (resp.status !== "error") {
+      const cli = ACTION_TO_CLI[action] ?? action;
+      const next = await settledState(client, 1000);
+      return `\n\n(Auto: ${cli})` + next;
+    }
+  }
+
   return "\n\n" + formatFullState(state);
 }
 
@@ -369,6 +382,20 @@ export async function getGameState(client: SpireBridgeClient): Promise<string> {
   if (!state || Object.keys(state).length === 0) {
     return "No game state available. Is Slay the Spire running with SpireBridge?";
   }
+
+  // Auto-execute if only one parameterless action available
+  const actions = state.available_actions ?? [];
+  const PARAMETERLESS = new Set(["proceed", "end_turn", "get_state"]);
+  const nonState = actions.filter(a => a.action !== "get_state");
+  if (nonState.length === 1 && PARAMETERLESS.has(nonState[0].action ?? "")) {
+    const action = nonState[0].action!;
+    const resp = await client.send(action);
+    if (resp.status !== "error") {
+      const cli = ACTION_TO_CLI[action] ?? action;
+      return `(Auto-executed: ${cli})\n` + await settledState(client, 1000);
+    }
+  }
+
   return formatFullState(state);
 }
 
