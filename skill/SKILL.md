@@ -56,10 +56,10 @@ spire-cli abandon                       # abandon current run
    - **rest_site**: heal or upgrade
    - **event**: choose option
    - **shop**: proceed (or buy if implemented)
-3. Repeat
+3. Every command returns the full updated game state — no need to call `state` between actions
+4. Repeat
 
 ## Tips
 - Card and enemy names are case-insensitive and support partial matching
-- Always check state after actions to see results
 - In combat, manage energy carefully — cards cost energy to play
 - Consider enemy intents when deciding between attack and defense
