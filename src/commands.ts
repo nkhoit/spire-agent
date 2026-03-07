@@ -134,15 +134,16 @@ function formatFullState(state: GameState): string {
   const enemies = getEnemies(state);
   if (enemies.length > 0) {
     lines.push("\n--- Enemies ---");
-    for (const e of enemies) lines.push(`  ${fmtEnemy(e)}`);
+    for (let i = 0; i < enemies.length; i++) lines.push(`  [${i}] ${fmtEnemy(enemies[i])}`);
   }
 
   const hand = getHand(state);
   if (hand.length > 0) {
     lines.push(`\n--- Hand (${hand.length} cards) ---`);
     hand.forEach((card, i) => {
-      const playable = card.playable !== false ? "✓" : "✗";
-      lines.push(`  [${i}] ${playable} ${fmtCard(card)}`);
+      const cost = card.cost !== undefined ? `(${card.cost})` : "";
+      const unplayable = card.playable === false ? " ✗" : "";
+      lines.push(`  [${i}] ${fmtCard(card)} ${cost}${unplayable}`);
     });
   }
 
