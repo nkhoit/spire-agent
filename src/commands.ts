@@ -285,11 +285,15 @@ async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<s
   let state = client.lastState;
   if (!state) return "";
 
-  // Event screens load options after the screen type changes — retry if empty
+  // Event screens load options after the screen type changes — retry until populated
   const screen = getScreen(state);
   if (screen === "event" && findActions(state, "choose_option").length === 0) {
-    await client.drainUpdates(1500);
-    state = client.lastState ?? state;
+    const deadline = Date.now() + 5000;
+    while (Date.now() < deadline) {
+      await client.drainUpdates(500);
+      state = client.lastState ?? state;
+      if (getScreen(state) !== "event" || findActions(state, "choose_option").length > 0) break;
+    }
   }
 
   return "\n\n" + formatFullState(state);
