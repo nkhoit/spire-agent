@@ -202,6 +202,19 @@ server.tool(
 );
 
 server.tool(
+  "card_info",
+  "Look up detailed information about a card by name — description, cost, damage, block, rarity, keywords. Searches hand, deck, and all piles.",
+  {
+    card_name: z.string().describe("Card name to look up (partial match, case-insensitive)"),
+  },
+  async ({ card_name }) => {
+    const client = await getClient();
+    const result = await commands.cardInfo(client, card_name);
+    return { content: [{ type: "text", text: result }] };
+  }
+);
+
+server.tool(
   "read_notes",
   "Read your persistent notes/learnings about the game. These survive across sessions and compactions.",
   {},

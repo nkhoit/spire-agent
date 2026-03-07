@@ -129,6 +129,14 @@ program
   });
 
 program
+  .command("card-info <name>")
+  .description("Look up detailed card information by name")
+  .action(async (name: string) => {
+    const { url } = program.opts<{ url: string }>();
+    await run(url, (c) => commands.cardInfo(c, name));
+  });
+
+program
   .command("notes")
   .description("Read persistent notes/learnings")
   .action(() => {

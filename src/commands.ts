@@ -510,6 +510,61 @@ export async function abandonRun(client: SpireBridgeClient): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
+// Card info — detailed lookup
+// ---------------------------------------------------------------------------
+
+function fmtCardDetailed(card: Card): string {
+  const lines: string[] = [];
+  let name = card.name ?? "?";
+  if (card.upgraded) name += "+";
+  lines.push(`**${name}**`);
+  if (card.type) lines.push(`  Type: ${card.type}`);
+  if (card.cost !== undefined) lines.push(`  Cost: ${card.cost}`);
+  if (card.damage) lines.push(`  Damage: ${card.damage}`);
+  if (card.block) lines.push(`  Block: ${card.block}`);
+  if (card.rarity) lines.push(`  Rarity: ${card.rarity}`);
+  if (card.exhausts) lines.push(`  Exhausts: yes`);
+  if (card.description) lines.push(`  ${card.description}`);
+  return lines.join("\n");
+}
+
+export async function cardInfo(client: SpireBridgeClient, cardName: string): Promise<string> {
+  const state = await client.getState();
+  const player = getPlayer(state);
+  const lower = cardName.toLowerCase().replace(/\+$/, "");
+
+  // Search all card pools: hand, deck, draw, discard, exhaust, card choices
+  const pools: { label: string; cards: Card[] }[] = [
+    { label: "Hand", cards: getHand(state) },
+    { label: "Deck", cards: player.deck ?? [] },
+    { label: "Draw Pile", cards: player.draw_pile ?? [] },
+    { label: "Discard Pile", cards: player.discard_pile ?? [] },
+    { label: "Exhaust Pile", cards: player.exhaust_pile ?? [] },
+    { label: "Card Choices", cards: state.card_choices ?? [] },
+  ];
+
+  const matches: Card[] = [];
+  const seen = new Set<string>();
+
+  for (const pool of pools) {
+    for (const card of pool.cards) {
+      const name = (card.name ?? "").toLowerCase();
+      const key = `${card.name}|${card.upgraded ?? false}`;
+      if ((name === lower || name.includes(lower)) && !seen.has(key)) {
+        seen.add(key);
+        matches.push(card);
+      }
+    }
+  }
+
+  if (matches.length === 0) {
+    return `Card '${cardName}' not found in hand, deck, or piles.`;
+  }
+
+  return matches.map(fmtCardDetailed).join("\n\n");
+}
+
+// ---------------------------------------------------------------------------
 // Notes — persistent learnings across sessions
 // ---------------------------------------------------------------------------
 
