@@ -10,6 +10,12 @@ import {
   playerEnergy,
   playerHp,
 } from "./state.js";
+import { readFileSync, appendFileSync, writeFileSync, existsSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const NOTES_PATH = join(__dirname, "..", "notes.md");
 
 // ---------------------------------------------------------------------------
 // Formatting helpers
@@ -467,4 +473,21 @@ export async function abandonRun(client: SpireBridgeClient): Promise<string> {
   }
 
   return `Run abandoned.` + await settledState(client, 2000);
+}
+
+// ---------------------------------------------------------------------------
+// Notes — persistent learnings across sessions
+// ---------------------------------------------------------------------------
+
+export function readNotes(): string {
+  if (!existsSync(NOTES_PATH)) return "No notes yet.";
+  const content = readFileSync(NOTES_PATH, "utf-8").trim();
+  return content || "No notes yet.";
+}
+
+export function writeNote(note: string): string {
+  const timestamp = new Date().toISOString().slice(0, 19).replace("T", " ");
+  const entry = `- [${timestamp}] ${note}\n`;
+  appendFileSync(NOTES_PATH, entry, "utf-8");
+  return `Note saved.`;
 }

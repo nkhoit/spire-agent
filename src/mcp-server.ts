@@ -34,7 +34,9 @@ const server = new McpServer(
 ## Important
 - Always check the screen type before acting — wrong actions for the current screen will fail.
 - In combat, only play cards marked as playable (✓). Cards marked ✗ can't be played.
-- Targeted cards require a target enemy name.`,
+- Targeted cards require a target enemy name.
+- Use read_notes at the start of each session to recall past learnings.
+- Use write_note to record strategy insights, enemy patterns, and mistakes to avoid.`,
   }
 );
 
@@ -195,6 +197,28 @@ server.tool(
   async () => {
     const client = await getClient();
     const result = await commands.abandonRun(client);
+    return { content: [{ type: "text", text: result }] };
+  }
+);
+
+server.tool(
+  "read_notes",
+  "Read your persistent notes/learnings about the game. These survive across sessions and compactions.",
+  {},
+  async () => {
+    const result = commands.readNotes();
+    return { content: [{ type: "text", text: result }] };
+  }
+);
+
+server.tool(
+  "write_note",
+  "Save a persistent note/learning about the game. Use this to record strategy insights, enemy patterns, card synergies, mistakes to avoid, etc.",
+  {
+    note: z.string().describe("The note to save"),
+  },
+  async ({ note }) => {
+    const result = commands.writeNote(note);
     return { content: [{ type: "text", text: result }] };
   }
 );

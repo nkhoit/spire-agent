@@ -128,4 +128,18 @@ program
     await run(url, (c) => commands.abandonRun(c));
   });
 
+program
+  .command("notes")
+  .description("Read persistent notes/learnings")
+  .action(() => {
+    console.log(commands.readNotes());
+  });
+
+program
+  .command("note <text>")
+  .description("Save a persistent note/learning")
+  .action((text: string) => {
+    console.log(commands.writeNote(text));
+  });
+
 program.parse();
