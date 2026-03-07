@@ -401,6 +401,20 @@ async function settledState(client: SpireBridgeClient, _prevScreen?: string): Pr
     }
   }
 
+  // After combat ends, rewards overlay may open slightly after the map push.
+  // Poll briefly to catch rewards screen that appears after combat_ended.
+  if (screen === "map" && _prevScreen !== "map") {
+    debug("settle", `map after non-map, checking for rewards transition`);
+    const rewardDeadline = Date.now() + 2000;
+    while (Date.now() < rewardDeadline) {
+      await new Promise((r) => setTimeout(r, 300));
+      state = await client.getState();
+      screen = getScreen(state);
+      debug("settle", `rewards check: screen=${screen}`);
+      if (screen !== "map") break;
+    }
+  }
+
   // Light safety net: if state looks incomplete, poll briefly
   const looksIncomplete =
     (screen === "event" && findActions(state, "choose_option").length === 0) ||
