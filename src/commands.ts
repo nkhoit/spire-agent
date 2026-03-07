@@ -668,7 +668,7 @@ export async function chooseMapNode(client: SpireBridgeClient, nodeType: string)
     if (resp.status === "error") {
       return `Error choosing node: ${resp.error ?? resp.message}`;
     }
-    return `Navigated to ${node["type"]}.` + await settledState(client);
+    return `Navigated to ${node["type"]}.` + await settledState(client, "map");
   }
 
   const lower = nodeType.toLowerCase();
@@ -687,7 +687,7 @@ export async function chooseMapNode(client: SpireBridgeClient, nodeType: string)
     return `Error choosing node: ${resp.error ?? resp.message}`;
   }
 
-  return `Navigated to ${node["type"]}.` + await settledState(client);
+  return `Navigated to ${node["type"]}.` + await settledState(client, "map");
 }
 
 export async function chooseReward(client: SpireBridgeClient, index: number): Promise<string> {
