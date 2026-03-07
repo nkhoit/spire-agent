@@ -296,13 +296,13 @@ function formatFullState(state: GameState): string {
       const cli = actionToCli(a.action ?? "?");
       switch (a.action) {
         case "play": return "play";
-        case "use_potion": return 'use-potion "<name>" [--target "<enemy>"]';
+        case "use_potion": return "use-potion";
         case "choose_reward": return "choose-reward <index>";
         case "choose_card": return "choose-card";
         case "choose_option": return "choose-event <index>";
-        case "choose_node": return 'choose-map "<type or index>"';
+        case "choose_node": return "choose-map";
         case "choose_rest_option": return "rest <heal|smith>";
-        case "shop_buy": return 'shop-buy <index>';
+        case "shop_buy": return "shop-buy";
         case "start_run": return "start-run [--character <name>]";
         default: return cli;
       }
