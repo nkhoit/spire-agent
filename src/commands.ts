@@ -417,6 +417,20 @@ async function settledState(client: SpireBridgeClient, _prevScreen?: string): Pr
     }
   }
 
+  // Combat: wait for hand to stabilize (card draw animations)
+  if (screen === "combat") {
+    let prevHandSize = getHand(state).length;
+    const deadline = Date.now() + 3000;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 500));
+      state = await client.getState();
+      const handSize = getHand(state).length;
+      debug("settle", `hand stabilize: prev=${prevHandSize} cur=${handSize}`);
+      if (handSize > 0 && handSize === prevHandSize) break;
+      prevHandSize = handSize;
+    }
+  }
+
   // Auto-proceed if only parameterless action available
   // Track screen to prevent infinite loops (don't re-execute on same screen)
   const PARAMETERLESS = new Set(["proceed", "end_turn"]);
