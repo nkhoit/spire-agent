@@ -48,7 +48,7 @@ function fmtPileSummary(cards: Card[]): string {
   const counts: Record<string, number> = {};
   for (const c of cards) {
     let name = c.name ?? "?";
-    if (c.upgraded) name += "+";
+    if (c.upgraded && !name.endsWith("+")) name += "+";
     counts[name] = (counts[name] ?? 0) + 1;
   }
   return Object.entries(counts)
@@ -194,7 +194,7 @@ function formatFullState(state: GameState): string {
     const counts: Record<string, number> = {};
     for (const c of deck) {
       let name = c.name ?? "?";
-      if (c.upgraded) name += "+";
+      if (c.upgraded && !name.endsWith("+")) name += "+";
       counts[name] = (counts[name] ?? 0) + 1;
     }
     const deckParts = Object.entries(counts)
