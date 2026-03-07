@@ -318,31 +318,49 @@ function formatFullState(state: GameState): string {
 // Resolution helpers
 // ---------------------------------------------------------------------------
 
-function resolveCard(hand: Card[], cardName: string): [number, Card] | null {
-  // Try index first
-  const idx = parseInt(cardName, 10);
-  if (!isNaN(idx) && idx >= 0 && idx < hand.length) return [idx, hand[idx]];
-  // Then exact name, then partial
-  const lower = cardName.toLowerCase();
+function resolveCard(hand: Card[], name: string): [number, Card] | null {
+  const idx = parseInt(name, 10);
+  if (!isNaN(idx) && idx >= 0 && idx < hand.length) {
+    debug("resolve", `card "${name}" → index [${idx}] ${hand[idx].name}`);
+    return [idx, hand[idx]];
+  }
+  const lower = name.toLowerCase();
   for (let i = 0; i < hand.length; i++) {
-    if ((hand[i].name ?? "").toLowerCase() === lower) return [i, hand[i]];
+    if (cardName(hand[i]).toLowerCase() === lower) {
+      debug("resolve", `card "${name}" → exact [${i}] ${hand[i].name}`);
+      return [i, hand[i]];
+    }
   }
   for (let i = 0; i < hand.length; i++) {
-    if ((hand[i].name ?? "").toLowerCase().includes(lower)) return [i, hand[i]];
+    if (cardName(hand[i]).toLowerCase().includes(lower)) {
+      debug("resolve", `card "${name}" → partial [${i}] ${hand[i].name}`);
+      return [i, hand[i]];
+    }
   }
+  debug("resolve", `card "${name}" → NOT FOUND`);
   return null;
 }
 
 function resolveEnemy(enemies: Enemy[], target: string): number | null {
   const idx = parseInt(target, 10);
-  if (!isNaN(idx) && idx >= 0 && idx < enemies.length) return idx;
+  if (!isNaN(idx) && idx >= 0 && idx < enemies.length) {
+    debug("resolve", `enemy "${target}" → index [${idx}] ${enemies[idx].name}`);
+    return idx;
+  }
   const lower = target.toLowerCase();
   for (let i = 0; i < enemies.length; i++) {
-    if ((enemies[i].name ?? "").toLowerCase() === lower) return i;
+    if ((enemies[i].name ?? "").toLowerCase() === lower) {
+      debug("resolve", `enemy "${target}" → exact [${i}] ${enemies[i].name}`);
+      return i;
+    }
   }
   for (let i = 0; i < enemies.length; i++) {
-    if ((enemies[i].name ?? "").toLowerCase().includes(lower)) return i;
+    if ((enemies[i].name ?? "").toLowerCase().includes(lower)) {
+      debug("resolve", `enemy "${target}" → partial [${i}] ${enemies[i].name}`);
+      return i;
+    }
   }
+  debug("resolve", `enemy "${target}" → NOT FOUND (${enemies.length} enemies)`);
   return null;
 }
 
@@ -450,8 +468,10 @@ export async function playCard(
   cardName: string,
   target?: string
 ): Promise<string> {
+  debug("cmd", `playCard cardName="${cardName}" target="${target}"`);
   const state = await client.getState();
   const hand = getHand(state);
+  debug("cmd", `hand: ${hand.map((c,i) => `[${i}]${c.name}`).join(", ")}`);
 
   const result = resolveCard(hand, cardName);
   if (!result) {
@@ -459,19 +479,23 @@ export async function playCard(
     return `Card '${cardName}' not found. Available cards: ${available}`;
   }
   const [cardIdx, card] = result;
+  debug("cmd", `resolved card: [${cardIdx}] ${card.name}`);
 
   const params: Record<string, unknown> = { card: cardIdx };
 
   if (target !== undefined) {
     const enemies = getHittableEnemies(state);
+    debug("cmd", `enemies: ${enemies.map((e,i) => `[${i}]${e.name}`).join(", ")}`);
     const enemyIdx = resolveEnemy(enemies, target);
     if (enemyIdx === null) {
       const available = enemies.map((e) => e.name ?? "?").join(", ");
       return `Target '${target}' not found. Available enemies: ${available}`;
     }
     params["target"] = enemyIdx;
+    debug("cmd", `resolved target: [${enemyIdx}] ${enemies[enemyIdx].name}`);
   }
 
+  debug("cmd", `send play params=${JSON.stringify(params)}`);
   const resp = await client.send("play", params);
   if (resp.status === "error") {
     return `Error playing ${card.name}: ${resp.error ?? resp.message}`;
@@ -485,9 +509,13 @@ export async function playCards(
   client: SpireBridgeClient,
   specs: string[]
 ): Promise<string> {
+  debug("cmd", `playCards specs=${JSON.stringify(specs)}`);
   // Pre-resolve indices to names using current hand (before any cards are played)
   const preState = await client.getState();
   const preHand = getHand(preState);
+  debug("cmd", `preHand: ${preHand.map((c,i) => `[${i}]${c.name}`).join(", ")}`);
+  const preEnemies = getHittableEnemies(preState);
+  debug("cmd", `preEnemies: ${preEnemies.map((e,i) => `[${i}]${e.name}`).join(", ")}`);
   const resolvedSpecs = specs.map(spec => {
     const parts = spec.trim().split(/\s+/);
     const cardRef = parts[0];
@@ -495,7 +523,6 @@ export async function playCards(
     if (!isNaN(idx) && idx >= 0 && idx < preHand.length) {
       parts[0] = preHand[idx].name ?? cardRef;
     }
-    // Also resolve target index to name
     if (parts.length > 1) {
       const targetIdx = parseInt(parts.slice(1).join(" "), 10);
       if (!isNaN(targetIdx)) {
@@ -508,13 +535,14 @@ export async function playCards(
     }
     return parts.join(" ");
   });
+  debug("cmd", `resolvedSpecs=${JSON.stringify(resolvedSpecs)}`);
 
   const results: string[] = [];
   for (const spec of resolvedSpecs) {
     const state = await client.getState();
     const hand = getHand(state);
+    debug("cmd", `multi-play "${spec}" hand: ${hand.map((c,i) => `[${i}]${c.name}`).join(", ")}`);
     
-    // Try progressively longer prefixes as card name
     const parts = spec.trim().split(/\s+/);
     let result: [number, Card] | null = null;
     let target: string | undefined;
@@ -532,6 +560,7 @@ export async function playCards(
     }
     const [cardIdx, card] = result;
     const params: Record<string, unknown> = { card: cardIdx };
+    debug("cmd", `resolved: [${cardIdx}] ${card.name} target=${target}`);
     
     if (target !== undefined) {
       const enemies = getHittableEnemies(state);
@@ -541,8 +570,10 @@ export async function playCards(
         break;
       }
       params["target"] = enemyIdx;
+      debug("cmd", `resolved target: [${enemyIdx}] ${enemies[enemyIdx].name}`);
     }
     
+    debug("cmd", `send play params=${JSON.stringify(params)}`);
     const resp = await client.send("play", params);
     if (resp.status === "error") {
       results.push(`Error playing ${card.name}: ${resp.error ?? resp.message} — stopping.`);
@@ -570,6 +601,7 @@ export async function usePotion(
   potionName: string,
   target?: string
 ): Promise<string> {
+  debug("cmd", `usePotion potion="${potionName}" target="${target}"`);
   const state = await client.getState();
   const player = getPlayer(state);
   const potions = player.potions ?? [];
@@ -604,6 +636,7 @@ export async function usePotion(
 }
 
 export async function chooseMapNode(client: SpireBridgeClient, nodeType: string): Promise<string> {
+  debug("cmd", `chooseMapNode nodeType="${nodeType}"`);
   const state = await client.getState();
   const nodes = findActions(state, "choose_node");
 
@@ -651,6 +684,7 @@ export async function chooseReward(client: SpireBridgeClient, index: number): Pr
 }
 
 export async function chooseCardReward(client: SpireBridgeClient, cardName: string): Promise<string> {
+  debug("cmd", `chooseCardReward cardName="${cardName}"`);
   const state = await client.getState();
   const screen = getScreen(state);
 
@@ -708,6 +742,7 @@ export async function restSiteAction(
   action: string,
   cardName?: string
 ): Promise<string> {
+  debug("cmd", `restSiteAction action="${action}" cardName="${cardName}"`);
   const state = await client.getState();
   const opts = findActions(state, "choose_rest_option");
 
@@ -761,6 +796,7 @@ export async function restSiteAction(
 }
 
 export async function chooseEventOption(client: SpireBridgeClient, index: number): Promise<string> {
+  debug("cmd", `chooseEventOption index=${index}`);
   const resp = await client.send("choose_option", { index });
   if (resp.status === "error") {
     return `Error choosing event option ${index}: ${resp.error ?? resp.message}`;
@@ -778,6 +814,7 @@ export async function shopBuy(client: SpireBridgeClient, index: number): Promise
 }
 
 export async function proceed(client: SpireBridgeClient): Promise<string> {
+  debug("cmd", `proceed`);
   const state = await client.getState();
   const preScreen = getScreen(state);
   const resp = await client.send("proceed");
@@ -811,6 +848,7 @@ export async function abandonRun(client: SpireBridgeClient): Promise<string> {
 }
 
 export async function continueRun(client: SpireBridgeClient): Promise<string> {
+  debug("cmd", `continueRun`);
   const resp = await client.send("continue_run");
   if (resp.status === "error") {
     return `Error continuing run: ${resp.error ?? resp.message}`;
