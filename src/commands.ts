@@ -222,6 +222,21 @@ function formatFullState(state: GameState): string {
     }
   }
 
+  // Shop items
+  const shopItems = findActions(state, "shop_buy");
+  if (shopItems.length > 0) {
+    const gold = (state as unknown as Record<string, unknown>).shop 
+      ? ((state as unknown as Record<string, unknown>).shop as Record<string, unknown>)?.gold 
+      : undefined;
+    lines.push(`\n--- Shop${gold !== undefined ? ` (${gold} gold)` : ""} ---`);
+    for (const item of shopItems) {
+      const cost = item["cost"] ?? "?";
+      const affordable = item["affordable"] ? "" : " [can't afford]";
+      const desc = (item["description"] as string)?.replace(/^Buy /, "") ?? `item (${cost}g)`;
+      lines.push(`  [${item["index"]}] ${desc}${affordable}`);
+    }
+  }
+
   const available: Action[] = state.available_actions ?? [];
   if (available.length > 0) {
     const cliCommands = [...new Set(available.map((a) => {
@@ -234,6 +249,7 @@ function formatFullState(state: GameState): string {
         case "choose_option": return "choose-event <index>";
         case "choose_node": return 'choose-map "<type or index>"';
         case "choose_rest_option": return "rest <heal|smith>";
+        case "shop_buy": return 'shop-buy <index>';
         case "start_run": return "start-run [--character <name>]";
         default: return cli;
       }
@@ -562,6 +578,14 @@ export async function chooseEventOption(client: SpireBridgeClient, index: number
   }
 
   return `Chose event option [${index}].` + await settledState(client, 2000);
+}
+
+export async function shopBuy(client: SpireBridgeClient, index: number): Promise<string> {
+  const resp = await client.send("shop_buy", { index });
+  if (resp.status === "error") {
+    return `Error buying item ${index}: ${resp.error ?? resp.message}`;
+  }
+  return `Bought item [${index}].` + await settledState(client, 1000);
 }
 
 export async function proceed(client: SpireBridgeClient): Promise<string> {

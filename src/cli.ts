@@ -104,6 +104,14 @@ program
   });
 
 program
+  .command("shop-buy <index>")
+  .description("Buy an item from the shop by index")
+  .action(async (index: string) => {
+    const { url } = program.opts<{ url: string }>();
+    await run(url, (c) => commands.shopBuy(c, parseInt(index, 10)));
+  });
+
+program
   .command("proceed")
   .description("Proceed/continue past current screen")
   .action(async () => {

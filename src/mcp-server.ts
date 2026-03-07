@@ -167,6 +167,19 @@ server.tool(
 );
 
 server.tool(
+  "shop_buy",
+  "Buy an item from the shop by index.",
+  {
+    index: z.number().int().describe("Shop item index"),
+  },
+  async ({ index }) => {
+    const client = await getClient();
+    const result = await commands.shopBuy(client, index);
+    return { content: [{ type: "text", text: result }] };
+  }
+);
+
+server.tool(
   "proceed",
   "Generic proceed/continue — leave shop, skip rewards, advance past game over, etc.",
   {},
