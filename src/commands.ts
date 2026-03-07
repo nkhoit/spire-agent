@@ -170,7 +170,11 @@ function formatFullState(state: GameState): string {
   const cardChoices = state.card_choices ?? [];
   if (cardChoices.length > 0) {
     lines.push("\n--- Card Choices ---");
-    cardChoices.forEach((c, i) => lines.push(`  [${i}] ${fmtCard(c)}`));
+    cardChoices.forEach((c, i) => {
+      let line = `  [${i}] ${fmtCard(c)}`;
+      if (c.description) line += ` — ${c.description}`;
+      lines.push(line);
+    });
   }
 
   const rewards: Reward[] = state.rewards ?? [];
