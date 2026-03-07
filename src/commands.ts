@@ -110,10 +110,14 @@ function formatFullState(state: GameState): string {
 
   const player = getPlayer(state);
   const [hp, maxHp] = playerHp(state);
-  const energy = playerEnergy(state);
+  const energy = player.energy;
+  const maxEnergy = (player as unknown as Record<string, unknown>).max_energy;
   const block = player.block ?? 0;
   lines.push("\n--- Player ---");
-  lines.push(`HP: ${hp}/${maxHp}  Energy: ${energy}` + (block ? `  Block: ${block}` : ""));
+  let playerLine = `HP: ${hp}/${maxHp}`;
+  if (energy !== undefined) playerLine += `  Energy: ${energy}${maxEnergy !== undefined ? `/${maxEnergy}` : ""}`;
+  if (block) playerLine += `  Block: ${block}`;
+  lines.push(playerLine);
 
   const relics = player.relics ?? [];
   if (relics.length > 0) {
@@ -327,14 +331,22 @@ async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<s
   let state = client.lastState;
   if (!state) return "";
 
-  // Event screens load options after the screen type changes — retry until populated
   const screen = getScreen(state);
-  if (screen === "event" && findActions(state, "choose_option").length === 0) {
+
+  // Retry loop for screens that load asynchronously
+  const needsRetry = 
+    (screen === "event" && findActions(state, "choose_option").length === 0) ||
+    (screen === "combat" && getPlayer(state).energy === undefined);
+
+  if (needsRetry) {
     const deadline = Date.now() + 5000;
     while (Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 500));
       state = await client.getState();
-      if (getScreen(state) !== "event" || findActions(state, "choose_option").length > 0) break;
+      const s = getScreen(state);
+      if (s === "event" && findActions(state, "choose_option").length > 0) break;
+      if (s === "combat" && getPlayer(state).energy !== undefined) break;
+      if (s !== screen) break;
     }
   }
 
