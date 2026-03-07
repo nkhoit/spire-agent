@@ -489,15 +489,23 @@ export async function playCards(
 
   const results: string[] = [];
   for (const spec of resolvedSpecs) {
-    const parts = spec.trim().split(/\s+/);
-    const cardName = parts[0];
-    const target = parts.length > 1 ? parts.slice(1).join(" ") : undefined;
-    
     const state = await client.getState();
     const hand = getHand(state);
-    const result = resolveCard(hand, cardName);
+    
+    // Try progressively longer prefixes as card name
+    const parts = spec.trim().split(/\s+/);
+    let result: [number, Card] | null = null;
+    let target: string | undefined;
+    for (let i = parts.length; i >= 1; i--) {
+      const tryName = parts.slice(0, i).join(" ");
+      result = resolveCard(hand, tryName);
+      if (result) {
+        target = i < parts.length ? parts.slice(i).join(" ") : undefined;
+        break;
+      }
+    }
     if (!result) {
-      results.push(`Card '${cardName}' not found — stopping.`);
+      results.push(`Card '${spec.trim()}' not found — stopping.`);
       break;
     }
     const [cardIdx, card] = result;
