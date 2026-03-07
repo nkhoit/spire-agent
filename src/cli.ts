@@ -160,6 +160,22 @@ program
   });
 
 program
+  .command("relic-info <name>")
+  .description("Look up relic information by name")
+  .action(async (name: string) => {
+    const { url } = program.opts<{ url: string }>();
+    await run(url, (c) => commands.relicInfo(c, name));
+  });
+
+program
+  .command("potion-info <name>")
+  .description("Look up potion information by name")
+  .action(async (name: string) => {
+    const { url } = program.opts<{ url: string }>();
+    await run(url, (c) => commands.potionInfo(c, name));
+  });
+
+program
   .command("notes")
   .description("Read persistent notes/learnings")
   .action(() => {

@@ -62,10 +62,12 @@ export interface Intent {
 
 export interface Relic {
   name: string;
+  description?: string;
 }
 
 export interface Potion {
   name: string;
+  description?: string;
 }
 
 export interface Reward {

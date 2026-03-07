@@ -889,6 +889,28 @@ export async function cardInfo(client: SpireBridgeClient, cardName: string): Pro
 }
 
 // ---------------------------------------------------------------------------
+// Relic & Potion info
+// ---------------------------------------------------------------------------
+
+export async function relicInfo(client: SpireBridgeClient, name: string): Promise<string> {
+  const state = await client.getState();
+  const relics = getPlayer(state).relics ?? [];
+  const lower = name.toLowerCase();
+  const matches = relics.filter(r => (r.name ?? "").toLowerCase().includes(lower));
+  if (matches.length === 0) return `Relic '${name}' not found. Relics: ${relics.map(r => r.name ?? "?").join(", ")}`;
+  return matches.map(r => `**${r.name}**\n  ${r.description ?? "No description"}`).join("\n\n");
+}
+
+export async function potionInfo(client: SpireBridgeClient, name: string): Promise<string> {
+  const state = await client.getState();
+  const potions = (getPlayer(state).potions ?? []).filter((p): p is Potion => !!p && !!p.name && p.name !== "Potion Slot");
+  const lower = name.toLowerCase();
+  const matches = potions.filter(p => (p.name ?? "").toLowerCase().includes(lower));
+  if (matches.length === 0) return `Potion '${name}' not found. Potions: ${potions.map(p => p.name ?? "?").join(", ")}`;
+  return matches.map(p => `**${p.name}**\n  ${p.description ?? "No description"}`).join("\n\n");
+}
+
+// ---------------------------------------------------------------------------
 // Notes — persistent learnings across sessions
 // ---------------------------------------------------------------------------
 
