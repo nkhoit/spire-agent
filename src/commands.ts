@@ -280,8 +280,16 @@ function resolvePotion(potions: (Potion | null | undefined)[], potionName: strin
 
 async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<string> {
   await client.drainUpdates(waitMs);
-  const state = client.lastState;
+  let state = client.lastState;
   if (!state) return "";
+
+  // Event screens load options after the screen type changes — retry if empty
+  const screen = getScreen(state);
+  if (screen === "event" && findActions(state, "choose_option").length === 0) {
+    await client.drainUpdates(1500);
+    state = client.lastState ?? state;
+  }
+
   return "\n\n" + formatFullState(state);
 }
 
