@@ -43,6 +43,7 @@ export class SpireBridgeClient {
           };
           this.lastState = update.state;
           this.stateQueue.push(update);
+          process.stderr.write(`[push] seq=${update.seq} event=${update.event} screen=${update.state?.screen}\n`);
           for (const waiter of this.stateWaiters) {
             waiter(update);
           }
@@ -149,22 +150,24 @@ export class SpireBridgeClient {
   async drainUpdates(timeoutMs = 3000, quietMs = 800): Promise<GameState | null> {
     const deadline = Date.now() + timeoutMs;
     let lastReceived = 0;
+    process.stderr.write(`[drain] start, queue=${this.stateQueue.length}\n`);
 
     while (Date.now() < deadline) {
       if (this.stateQueue.length > 0) {
         while (this.stateQueue.length > 0) {
           const update = this.stateQueue.shift()!;
           this.lastState = update.state;
+          process.stderr.write(`[drain] consumed seq=${update.seq} screen=${update.state?.screen}\n`);
         }
         lastReceived = Date.now();
       }
-      // If we got a push and enough quiet time passed, we're settled
       if (lastReceived > 0 && Date.now() - lastReceived >= quietMs) {
+        process.stderr.write(`[drain] settled after quiet\n`);
         return this.lastState;
       }
       await new Promise((r) => setTimeout(r, 100));
     }
-    // Timeout — drain whatever we have
+    process.stderr.write(`[drain] timeout, queue=${this.stateQueue.length}\n`);
     while (this.stateQueue.length > 0) {
       const update = this.stateQueue.shift()!;
       this.lastState = update.state;

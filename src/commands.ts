@@ -359,16 +359,26 @@ function resolvePotion(potions: (Potion | null | undefined)[], potionName: strin
 // Post-action state helper
 // ---------------------------------------------------------------------------
 
-async function settledState(client: SpireBridgeClient, waitMs = 2500): Promise<string> {
-  // Wait for debounced state push from SpireBridge (settles after 500ms of no changes, max 2s)
-  await client.drainUpdates(waitMs);
+async function settledState(client: SpireBridgeClient, _prevScreen?: string): Promise<string> {
+  // Wait for debounced state push from SpireBridge
+  await client.drainUpdates();
   let state = client.lastState;
   if (!state) return "";
 
   let screen = getScreen(state);
 
+  // If push state looks stale (same screen as before action), do an active getState poll
+  if (_prevScreen && screen === _prevScreen) {
+    const deadline = Date.now() + 3000;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 500));
+      state = await client.getState();
+      screen = getScreen(state);
+      if (screen !== _prevScreen) break;
+    }
+  }
+
   // Light safety net: if state looks incomplete, poll briefly
-  // SpireBridge debounce handles most timing, this catches edge cases
   const looksIncomplete =
     (screen === "event" && findActions(state, "choose_option").length === 0) ||
     (screen === "combat" && getPlayer(state).energy === undefined);
@@ -381,19 +391,19 @@ async function settledState(client: SpireBridgeClient, waitMs = 2500): Promise<s
       screen = getScreen(state);
       if (screen === "event" && findActions(state, "choose_option").length > 0) break;
       if (screen === "combat" && getPlayer(state).energy !== undefined) break;
-      if (screen !== getScreen(client.lastState ?? state)) break;
     }
   }
 
   // Auto-proceed if only parameterless action available
+  // Track screen to prevent infinite loops (don't re-execute on same screen)
   const PARAMETERLESS = new Set(["proceed", "end_turn"]);
   const actions = (state.available_actions ?? []).filter(a => a.action !== "get_state" && a.action !== "discard_potion");
-  if (actions.length === 1 && PARAMETERLESS.has(actions[0].action ?? "")) {
+  if (actions.length === 1 && PARAMETERLESS.has(actions[0].action ?? "") && screen !== _prevScreen) {
     const action = actions[0].action!;
     const resp = await client.send(action);
     if (resp.status !== "error") {
       const cli = ACTION_TO_CLI[action] ?? action;
-      const next = await settledState(client);
+      const next = await settledState(client, screen);
       return `\n\n(Auto: ${cli})` + next;
     }
   }
@@ -682,7 +692,7 @@ export async function chooseCardReward(client: SpireBridgeClient, cardName: stri
   const chosen = cards[matchIdx].name ?? `card[${matchIdx}]`;
   // Context-aware response based on screen type
   const action = screen === "card_select" ? "Selected" : "Added";
-  return `${action} ${chosen}.` + await settledState(client);
+  return `${action} ${chosen}.` + await settledState(client, screen);
 }
 
 export async function restSiteAction(
@@ -739,7 +749,7 @@ export async function restSiteAction(
     }
   }
 
-  return `Performed '${action}' at rest site.` + await settledState(client);
+  return `Performed '${action}' at rest site.` + await settledState(client, "rest_site");
 }
 
 export async function chooseEventOption(client: SpireBridgeClient, index: number): Promise<string> {
@@ -760,12 +770,14 @@ export async function shopBuy(client: SpireBridgeClient, index: number): Promise
 }
 
 export async function proceed(client: SpireBridgeClient): Promise<string> {
+  const state = await client.getState();
+  const preScreen = getScreen(state);
   const resp = await client.send("proceed");
   if (resp.status === "error") {
     return `Error proceeding: ${resp.error ?? resp.message}`;
   }
 
-  return `Proceeded.` + await settledState(client);
+  return `Proceeded.` + await settledState(client, preScreen);
 }
 
 export async function startRun(client: SpireBridgeClient, character = "Ironclad"): Promise<string> {
@@ -795,7 +807,7 @@ export async function continueRun(client: SpireBridgeClient): Promise<string> {
   if (resp.status === "error") {
     return `Error continuing run: ${resp.error ?? resp.message}`;
   }
-  return `Run continued.` + await settledState(client);
+  return `Run continued.` + await settledState(client, "main_menu");
 }
 
 // ---------------------------------------------------------------------------
