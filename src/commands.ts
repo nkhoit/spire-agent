@@ -378,6 +378,7 @@ export async function chooseReward(client: SpireBridgeClient, index: number): Pr
 
 export async function chooseCardReward(client: SpireBridgeClient, cardName: string): Promise<string> {
   const state = await client.getState();
+  const screen = getScreen(state);
 
   if (cardName.toLowerCase() === "skip") {
     const resp = await client.send("skip");
@@ -389,7 +390,7 @@ export async function chooseCardReward(client: SpireBridgeClient, cardName: stri
 
   const cards = state.card_choices ?? [];
   if (cards.length === 0) {
-    return `No card choices available. Screen: ${getScreen(state)}`;
+    return `No card choices available. Screen: ${screen}`;
   }
 
   const lower = cardName.toLowerCase();
@@ -413,7 +414,9 @@ export async function chooseCardReward(client: SpireBridgeClient, cardName: stri
   }
 
   const chosen = cards[matchIdx].name ?? `card[${matchIdx}]`;
-  return `Added ${chosen} to deck.` + await settledState(client, 1000);
+  // Context-aware response based on screen type
+  const action = screen === "card_select" ? "Selected" : "Added";
+  return `${action} ${chosen}.` + await settledState(client, 1000);
 }
 
 export async function restSiteAction(
@@ -497,6 +500,11 @@ export async function startRun(client: SpireBridgeClient, character = "Ironclad"
     return `Error starting run: ${resp.error ?? resp.message}`;
   }
 
+  // Wait for the Neow event screen (or map if Neow is skipped)
+  const screen = await client.waitForScreen(new Set(["event", "map", "combat"]), 5000);
+  if (screen) {
+    return `Started run as ${character}.\n\n` + formatFullState(screen);
+  }
   return `Started run as ${character}.` + await settledState(client, 2000);
 }
 

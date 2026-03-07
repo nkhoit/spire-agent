@@ -128,7 +128,7 @@ server.tool(
 
 server.tool(
   "choose_card_reward",
-  "Pick a card from the card reward screen by name, or pass 'skip' to skip.",
+  "Pick a card by name from the card reward screen OR any card selection screen (upgrade, transform, remove). Pass 'skip' to skip.",
   {
     card_name: z.string().describe("Card name or 'skip'"),
   },
