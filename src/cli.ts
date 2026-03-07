@@ -43,16 +43,17 @@ program
   });
 
 program
-  .command("play <card> [target]")
+  .command("play <spec...>")
   .description("Play a card, optionally targeting an enemy. Use commas for multi-play: play \"0 3,4 3\"")
-  .action(async (card: string, target: string | undefined) => {
+  .action(async (spec: string[]) => {
     const { url } = program.opts<{ url: string }>();
-    if (card.includes(",")) {
-      // Multi-play: comma-separated specs with inline targets
-      const specs = card.split(",").map(s => s.trim());
+    const joined = spec.join(" ");
+    if (joined.includes(",")) {
+      const specs = joined.split(",").map(s => s.trim());
       await run(url, (c) => commands.playCards(c, specs));
     } else {
-      await run(url, (c) => commands.playCard(c, card.trim(), target?.trim()));
+      // Greedy resolve: try longest prefix as card name, remainder as target
+      await run(url, (c) => commands.playCards(c, [joined.trim()]));
     }
   });
 
