@@ -5,7 +5,38 @@ import { z } from "zod";
 import { SpireBridgeClient } from "./client.js";
 import * as commands from "./commands.js";
 
-const server = new McpServer({ name: "spire-bridge", version: "0.1.0" });
+const server = new McpServer(
+  { name: "spire-bridge", version: "0.1.0" },
+  {
+    instructions: `You are playing Slay the Spire 2 via the SpireBridge mod. You control the game by calling tools.
+
+## Gameplay Loop
+1. Call get_game_state to see the current screen and available actions.
+2. Based on the screen type, take appropriate actions:
+   - **combat**: Play cards from hand, use potions, end turn when out of energy/options.
+   - **map**: Choose the next node (Monster, Elite, RestSite, Shop, Event, Treasure).
+   - **rewards**: Pick rewards (gold, potions, relics, cards). Proceed when done.
+   - **card_reward**: Choose a card to add to deck or skip.
+   - **rest_site**: Heal or upgrade (smith) a card.
+   - **event**: Read the event text and choose an option.
+   - **shop**: Buy items or proceed to leave.
+   - **game_over**: Proceed through post-run screens or start a new run.
+3. Every action returns the updated game state — no need to call get_game_state between actions.
+
+## Strategy Tips
+- Read enemy intents carefully. Block when enemies attack hard, attack when they buff/debuff.
+- Manage energy: cards cost energy. Don't waste energy on low-impact plays.
+- Deck quality matters: skip weak card rewards, remove Strikes at shops.
+- Elite fights give relics but are harder. Balance risk vs reward on the map.
+- Rest sites: heal when low HP, upgrade key cards when healthy.
+- Card names and enemy names are case-insensitive with partial matching.
+
+## Important
+- Always check the screen type before acting — wrong actions for the current screen will fail.
+- In combat, only play cards marked as playable (✓). Cards marked ✗ can't be played.
+- Targeted cards require a target enemy name.`,
+  }
+);
 
 let _client: SpireBridgeClient | null = null;
 
