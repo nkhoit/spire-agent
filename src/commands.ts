@@ -343,7 +343,8 @@ async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<s
   // Retry loop for screens that load asynchronously
   const needsRetry = 
     (screen === "event" && findActions(state, "choose_option").length === 0) ||
-    (screen === "combat" && getPlayer(state).energy === undefined);
+    (screen === "combat" && getPlayer(state).energy === undefined) ||
+    (screen === "combat" && getHand(state).length === 0 && (getPlayer(state).energy ?? 0) === 0);
 
   if (needsRetry) {
     const deadline = Date.now() + 5000;
@@ -352,7 +353,7 @@ async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<s
       state = await client.getState();
       const s = getScreen(state);
       if (s === "event" && findActions(state, "choose_option").length > 0) break;
-      if (s === "combat" && getPlayer(state).energy !== undefined) break;
+      if (s === "combat" && getPlayer(state).energy !== undefined && getHand(state).length > 0) break;
       if (s !== screen) break;
     }
   }
