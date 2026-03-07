@@ -28,10 +28,10 @@ program
   .name("spire-cli")
   .description("Control Slay the Spire 2 via SpireBridge")
   .option("--url <url>", "SpireBridge WebSocket URL", DEFAULT_URL)
-  .option("--debug", "Enable debug logging to /tmp/spire-debug.log")
+  .option("--debug", "Enable debug logging to /tmp/spire-debug.log (or set SPIRE_DEBUG=1)")
   .hook("preAction", () => {
     const opts = program.opts<{ debug?: boolean }>();
-    if (opts.debug) enableDebug();
+    if (opts.debug || process.env.SPIRE_DEBUG === "1") enableDebug();
   });
 
 program
