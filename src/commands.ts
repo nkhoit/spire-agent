@@ -73,18 +73,27 @@ function fmtEnemy(enemy: Enemy): string {
   const name = enemy.name ?? "Enemy";
   const hp = enemy.hp ?? "?";
   const maxHp = enemy.max_hp ?? "?";
-  const intent = enemy.intent ?? {};
+  
+  // Handle intents (array from SpireBridge) or intent (singular legacy)
+  const intents: Array<{type?: string; damage?: number; hits?: number}> = 
+    (enemy as unknown as Record<string, unknown>).intents as Array<{type?: string; damage?: number; hits?: number}> 
+    ?? (enemy.intent ? [enemy.intent] : []);
   let intentStr = "";
-  if (Object.keys(intent).length > 0) {
-    const itype = intent.type ?? "";
-    const dmg = intent.damage ?? 0;
-    const hits = intent.hits ?? 1;
-    if (dmg && hits) {
-      intentStr = hits > 1 ? ` [${itype} ${dmg}x${hits}=${dmg * hits}]` : ` [${itype} ${dmg}]`;
-    } else {
-      intentStr = ` [${itype}]`;
+  if (intents.length > 0) {
+    const parts: string[] = [];
+    for (const intent of intents) {
+      const itype = intent.type ?? "";
+      const dmg = intent.damage ?? 0;
+      const hits = intent.hits ?? 1;
+      if (dmg && hits) {
+        parts.push(hits > 1 ? `${itype} ${dmg}x${hits}=${dmg * hits}` : `${itype} ${dmg}`);
+      } else {
+        parts.push(String(itype));
+      }
     }
+    intentStr = ` [${parts.join(" + ")}]`;
   }
+  
   const block = enemy.block ?? 0;
   const blockStr = block ? ` 🛡${block}` : "";
   return `${name} ${hp}/${maxHp}${blockStr}${intentStr}`;
