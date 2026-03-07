@@ -294,8 +294,8 @@ async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<s
   if (screen === "event" && findActions(state, "choose_option").length === 0) {
     const deadline = Date.now() + 5000;
     while (Date.now() < deadline) {
-      await client.drainUpdates(500);
-      state = client.lastState ?? state;
+      await new Promise((r) => setTimeout(r, 500));
+      state = await client.getState();
       if (getScreen(state) !== "event" || findActions(state, "choose_option").length > 0) break;
     }
   }
