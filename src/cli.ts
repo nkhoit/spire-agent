@@ -43,17 +43,15 @@ program
   });
 
 program
-  .command("play <spec...>")
-  .description("Play a card, optionally targeting an enemy. Use commas for multi-play: play \"0 3,4 3\"")
-  .action(async (spec: string[]) => {
+  .command("play <card> [target]")
+  .description("Play a card, optionally targeting an enemy. Quote multi-word names. Commas for multi-play: play \"0 3,4 3\"")
+  .action(async (card: string, target: string | undefined) => {
     const { url } = program.opts<{ url: string }>();
-    const joined = spec.join(" ");
-    if (joined.includes(",")) {
-      const specs = joined.split(",").map(s => s.trim());
+    if (card.includes(",")) {
+      const specs = card.split(",").map(s => s.trim());
       await run(url, (c) => commands.playCards(c, specs));
     } else {
-      // Greedy resolve: try longest prefix as card name, remainder as target
-      await run(url, (c) => commands.playCards(c, [joined.trim()]));
+      await run(url, (c) => commands.playCard(c, card.trim(), target?.trim()));
     }
   });
 
