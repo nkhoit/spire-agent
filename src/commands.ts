@@ -370,7 +370,8 @@ async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<s
   const needsRetry = 
     (screen === "event" && findActions(state, "choose_option").length === 0) ||
     (screen === "combat" && getPlayer(state).energy === undefined) ||
-    (screen === "combat" && getHand(state).length === 0 && (getPlayer(state).energy ?? 0) === 0);
+    (screen === "combat" && getHand(state).length === 0 && (getPlayer(state).energy ?? 0) === 0) ||
+    (screen === "map" && findActions(state, "choose_node").length === 0 && findActions(state, "proceed").length > 0);
 
   if (needsRetry) {
     const deadline = Date.now() + 5000;
@@ -380,6 +381,7 @@ async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<s
       state = await client.getState();
       const s = getScreen(state);
       if (s === "event" && findActions(state, "choose_option").length > 0) break;
+      if (s === "map" && findActions(state, "choose_node").length > 0) break;
       if (s === "combat") {
         const p = getPlayer(state);
         const handSize = getHand(state).length;
@@ -414,7 +416,7 @@ async function settledState(client: SpireBridgeClient, waitMs = 1000): Promise<s
 
   // Auto-proceed if only parameterless action available
   const PARAMETERLESS = new Set(["proceed", "end_turn"]);
-  const actions = (state.available_actions ?? []).filter(a => a.action !== "get_state");
+  const actions = (state.available_actions ?? []).filter(a => a.action !== "get_state" && a.action !== "discard_potion");
   if (actions.length === 1 && PARAMETERLESS.has(actions[0].action ?? "")) {
     const action = actions[0].action!;
     const resp = await client.send(action);
