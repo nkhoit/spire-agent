@@ -222,18 +222,31 @@ function formatFullState(state: GameState): string {
     }
   }
 
-  // Shop items
-  const shopItems = findActions(state, "shop_buy");
-  if (shopItems.length > 0) {
-    const gold = (state as unknown as Record<string, unknown>).shop 
-      ? ((state as unknown as Record<string, unknown>).shop as Record<string, unknown>)?.gold 
-      : undefined;
+  // Shop items (use rich shop state if available, fall back to actions)
+  const shopData = (state as unknown as Record<string, unknown>).shop as Record<string, unknown> | undefined;
+  const shopItemsList = (shopData?.items as Array<Record<string, unknown>>) ?? [];
+  const shopActions = findActions(state, "shop_buy");
+  if (shopItemsList.length > 0 || shopActions.length > 0) {
+    const gold = shopData?.gold;
     lines.push(`\n--- Shop${gold !== undefined ? ` (${gold} gold)` : ""} ---`);
-    for (const item of shopItems) {
-      const cost = item["cost"] ?? "?";
-      const affordable = item["affordable"] ? "" : " [can't afford]";
-      const desc = (item["description"] as string)?.replace(/^Buy /, "") ?? `item (${cost}g)`;
-      lines.push(`  [${item["index"]}] ${desc}${affordable}`);
+    if (shopItemsList.length > 0) {
+      for (const item of shopItemsList) {
+        const cost = item.cost ?? "?";
+        const affordable = item.affordable === false ? " [can't afford]" : "";
+        const name = (item.name as string) ?? "item";
+        const desc = (item.description as string) ? ` — ${item.description}` : "";
+        const type = (item.type as string) ?? "";
+        const cardType = (item.card_type as string) ?? "";
+        const suffix = type === "card" && cardType ? ` ${cardType}` : "";
+        lines.push(`  [${item.index}] ${name} (${cost}g)${suffix}${desc}${affordable}`);
+      }
+    } else {
+      for (const item of shopActions) {
+        const cost = item["cost"] ?? "?";
+        const affordable = item["affordable"] ? "" : " [can't afford]";
+        const desc = (item["description"] as string)?.replace(/^Buy /, "") ?? `item (${cost}g)`;
+        lines.push(`  [${item["index"]}] ${desc}${affordable}`);
+      }
     }
   }
 
@@ -653,6 +666,13 @@ export async function cardInfo(client: SpireBridgeClient, cardName: string): Pro
     { label: "Exhaust Pile", cards: player.exhaust_pile ?? [] },
     { label: "Card Choices", cards: state.card_choices ?? [] },
   ];
+
+  // Also search shop items as cards
+  const shopState = (state as unknown as Record<string, unknown>).shop as Record<string, unknown> | undefined;
+  const shopCards = ((shopState?.items as Array<Record<string, unknown>>) ?? [])
+    .filter((i) => i.type === "card")
+    .map((i) => i as unknown as Card);
+  if (shopCards.length > 0) pools.push({ label: "Shop", cards: shopCards });
 
   const matches: Card[] = [];
   const seen = new Set<string>();
