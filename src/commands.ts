@@ -292,6 +292,10 @@ function formatFullState(state: GameState): string {
 // ---------------------------------------------------------------------------
 
 function resolveCard(hand: Card[], cardName: string): [number, Card] | null {
+  // Try index first
+  const idx = parseInt(cardName, 10);
+  if (!isNaN(idx) && idx >= 0 && idx < hand.length) return [idx, hand[idx]];
+  // Then exact name, then partial
   const lower = cardName.toLowerCase();
   for (let i = 0; i < hand.length; i++) {
     if ((hand[i].name ?? "").toLowerCase() === lower) return [i, hand[i]];
@@ -303,6 +307,8 @@ function resolveCard(hand: Card[], cardName: string): [number, Card] | null {
 }
 
 function resolveEnemy(enemies: Enemy[], target: string): number | null {
+  const idx = parseInt(target, 10);
+  if (!isNaN(idx) && idx >= 0 && idx < enemies.length) return idx;
   const lower = target.toLowerCase();
   for (let i = 0; i < enemies.length; i++) {
     if ((enemies[i].name ?? "").toLowerCase() === lower) return i;
