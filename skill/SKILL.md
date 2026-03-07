@@ -13,20 +13,20 @@ spire-cli state
 ```bash
 spire-cli play "Card Name" --target "Enemy Name"  # play a card (target optional)
 spire-cli end-turn                                  # end turn
-spire-cli potion "Potion Name" --target "Enemy"     # use potion (target optional)
+spire-cli use-potion "Potion Name" --target "Enemy" # use potion (target optional)
 ```
 
 ### Navigation
 ```bash
-spire-cli map "Monster"    # choose map node (Monster/Elite/RestSite/Shop/Event/Treasure)
-spire-cli proceed          # advance past rewards, shop, game over
+spire-cli choose-map "Monster"   # choose map node (Monster/Elite/RestSite/Shop/Event/Treasure)
+spire-cli proceed                # advance past rewards, shop, game over
 ```
 
 ### Rewards
 ```bash
-spire-cli reward 0              # pick reward by index
-spire-cli card-reward "Bash"    # pick card reward by name
-spire-cli card-reward skip      # skip card reward
+spire-cli choose-reward 0           # pick reward by index
+spire-cli choose-card "Bash"        # pick card from reward or selection screen
+spire-cli choose-card skip          # skip card reward
 ```
 
 ### Rest Sites
@@ -37,13 +37,13 @@ spire-cli rest smith --card "Strike"   # upgrade a card
 
 ### Events
 ```bash
-spire-cli event 0    # choose event option by index
+spire-cli choose-event 0    # choose event option by index
 ```
 
 ### Run Management
 ```bash
-spire-cli start --character Ironclad   # start new run
-spire-cli abandon                       # abandon current run
+spire-cli start-run --character Ironclad   # start new run
+spire-cli abandon                           # abandon current run
 ```
 
 ## Gameplay Loop
@@ -52,7 +52,7 @@ spire-cli abandon                       # abandon current run
 2. Make decisions based on screen type:
    - **combat**: play cards, use potions, end turn
    - **map**: choose next node
-   - **rewards/card_reward**: pick rewards
+   - **rewards/card_reward/card_select**: pick rewards, choose cards
    - **rest_site**: heal or upgrade
    - **event**: choose option
    - **shop**: proceed (or buy if implemented)
@@ -89,3 +89,4 @@ Read notes at the start of each session.
 - Card and enemy names are case-insensitive and support partial matching
 - In combat, manage energy carefully — cards cost energy to play
 - Consider enemy intents when deciding between attack and defense
+- CLI commands match the available_actions in game state (e.g. choose_reward → choose-reward)

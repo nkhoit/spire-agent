@@ -54,7 +54,7 @@ program
   });
 
 program
-  .command("potion <name>")
+  .command("use-potion <name>")
   .description("Use a potion")
   .option("--target <enemy>", "Target enemy name")
   .action(async (name: string, opts: { target?: string }) => {
@@ -63,7 +63,7 @@ program
   });
 
 program
-  .command("map <type>")
+  .command("choose-map <type>")
   .description("Choose a map node by type (Monster, Elite, RestSite, Shop, Event, Treasure)")
   .action(async (type: string) => {
     const { url } = program.opts<{ url: string }>();
@@ -71,7 +71,7 @@ program
   });
 
 program
-  .command("reward <index>")
+  .command("choose-reward <index>")
   .description("Choose a reward by index")
   .action(async (index: string) => {
     const { url } = program.opts<{ url: string }>();
@@ -79,8 +79,8 @@ program
   });
 
 program
-  .command("card-reward <name>")
-  .description("Choose a card reward by name (or 'skip')")
+  .command("choose-card <name>")
+  .description("Choose a card by name from card reward or card selection screen (or 'skip')")
   .action(async (name: string) => {
     const { url } = program.opts<{ url: string }>();
     await run(url, (c) => commands.chooseCardReward(c, name));
@@ -96,7 +96,7 @@ program
   });
 
 program
-  .command("event <index>")
+  .command("choose-event <index>")
   .description("Choose an event option by index")
   .action(async (index: string) => {
     const { url } = program.opts<{ url: string }>();
@@ -112,7 +112,7 @@ program
   });
 
 program
-  .command("start")
+  .command("start-run")
   .description("Start a new run")
   .option("--character <name>", "Character name", "Ironclad")
   .action(async (opts: { character: string }) => {
