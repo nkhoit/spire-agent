@@ -813,22 +813,21 @@ export async function restSiteAction(
 
   if (idTarget === "SMITH" && cardName) {
     const newState = client.lastState ?? state;
-    const upgradeActions = findActions(newState, "choose_card");
-    const deck = getPlayer(newState).deck ?? [];
+    const choices = newState.card_choices ?? [];
     const lowerCard = cardName.toLowerCase();
     let matchIdx: number | null = null;
-    for (let i = 0; i < deck.length; i++) {
-      const name = deck[i].name ?? "";
+    for (let i = 0; i < choices.length; i++) {
+      const name = choices[i].name ?? "";
       if (name.toLowerCase() === lowerCard || name.toLowerCase().includes(lowerCard)) {
-        matchIdx = i;
+        matchIdx = (choices[i] as unknown as Record<string, unknown>)["index"] as number ?? i;
         break;
       }
     }
-    if (matchIdx !== null && upgradeActions.length > 0) {
+    if (matchIdx !== null && choices.length > 0) {
       await client.send("choose_card", { index: matchIdx });
       return `Upgraded ${cardName} at rest site.` + await settledState(client);
     } else if (matchIdx === null) {
-      return `Rested (smith selected) but card '${cardName}' not found in deck for upgrade.` + await settledState(client);
+      return `Rested (smith selected) but card '${cardName}' not found in upgrade choices.` + await settledState(client);
     }
   }
 
