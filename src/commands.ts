@@ -298,7 +298,7 @@ function formatFullState(state: GameState): string {
         case "play": return "play";
         case "use_potion": return 'use-potion "<name>" [--target "<enemy>"]';
         case "choose_reward": return "choose-reward <index>";
-        case "choose_card": return 'choose-card "<name>"';
+        case "choose_card": return "choose-card";
         case "choose_option": return "choose-event <index>";
         case "choose_node": return 'choose-map "<type or index>"';
         case "choose_rest_option": return "rest <heal|smith>";
