@@ -189,8 +189,8 @@ function formatFullState(state: GameState): string {
   const mapNodes = findActions(state, "choose_node");
   if (mapNodes.length > 0) {
     lines.push("\n--- Available Map Nodes ---");
-    for (const n of mapNodes) {
-      lines.push(`  Row ${n["row"]} Col ${n["col"]}: ${n["type"] ?? "?"}`);
+    for (let i = 0; i < mapNodes.length; i++) {
+      lines.push(`  [${i}] ${mapNodes[i]["type"] ?? "?"}`);
     }
   }
 
@@ -226,7 +226,7 @@ function formatFullState(state: GameState): string {
         case "choose_reward": return "choose-reward <index>";
         case "choose_card": return 'choose-card "<name>"';
         case "choose_option": return "choose-event <index>";
-        case "choose_node": return 'choose-map "<type>"';
+        case "choose_node": return 'choose-map "<type or index>"';
         case "choose_rest_option": return "rest <heal|smith>";
         case "start_run": return "start-run [--character <name>]";
         default: return cli;
@@ -396,14 +396,25 @@ export async function chooseMapNode(client: SpireBridgeClient, nodeType: string)
     return `No map nodes available. Current screen: ${getScreen(state)}`;
   }
 
+  // Support index-based selection
+  const asNum = parseInt(nodeType, 10);
+  if (!isNaN(asNum) && asNum >= 0 && asNum < nodes.length) {
+    const node = nodes[asNum];
+    const resp = await client.send("choose_node", { row: node["row"], col: node["col"] });
+    if (resp.status === "error") {
+      return `Error choosing node: ${resp.error ?? resp.message}`;
+    }
+    return `Navigated to ${node["type"]}.` + await settledState(client, 2000);
+  }
+
   const lower = nodeType.toLowerCase();
   let matches = nodes.filter((n) => (n["type"] as string ?? "").toLowerCase() === lower);
   if (matches.length === 0) {
     matches = nodes.filter((n) => (n["type"] as string ?? "").toLowerCase().includes(lower));
   }
   if (matches.length === 0) {
-    const available = [...new Set(nodes.map((n) => n["type"] as string ?? "?"))].sort().join(", ");
-    return `No node of type '${nodeType}' available. Available types: ${available}`;
+    const available = nodes.map((n, i) => `[${i}] ${n["type"] ?? "?"}`).join(", ");
+    return `No node of type '${nodeType}' available. Available: ${available}`;
   }
 
   const node = matches[0];
@@ -412,7 +423,7 @@ export async function chooseMapNode(client: SpireBridgeClient, nodeType: string)
     return `Error choosing node: ${resp.error ?? resp.message}`;
   }
 
-  return `Navigated to ${node["type"]} at row ${node["row"]}, col ${node["col"]}.` + await settledState(client, 2000);
+  return `Navigated to ${node["type"]}.` + await settledState(client, 2000);
 }
 
 export async function chooseReward(client: SpireBridgeClient, index: number): Promise<string> {
