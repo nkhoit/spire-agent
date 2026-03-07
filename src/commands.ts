@@ -21,6 +21,29 @@ const NOTES_PATH = join(__dirname, "..", "notes.md");
 // Formatting helpers
 // ---------------------------------------------------------------------------
 
+const ACTION_TO_CLI: Record<string, string> = {
+  play: "play",
+  end_turn: "end-turn",
+  use_potion: "use-potion",
+  choose_node: "choose-map",
+  choose_reward: "choose-reward",
+  choose_card: "choose-card",
+  choose_option: "choose-event",
+  choose_rest_option: "rest",
+  start_run: "start-run",
+  proceed: "proceed",
+  abandon: "abandon",
+  skip: "choose-card skip",
+  get_state: "state",
+  discard_potion: "discard-potion",
+  shop_buy: "shop-buy",
+  open_chest: "open-chest",
+};
+
+function actionToCli(action: string): string {
+  return ACTION_TO_CLI[action] ?? action.replace(/_/g, "-");
+}
+
 function fmtPileSummary(cards: Card[]): string {
   const counts: Record<string, number> = {};
   for (const c of cards) {
@@ -191,8 +214,8 @@ function formatFullState(state: GameState): string {
 
   const available: Action[] = state.available_actions ?? [];
   if (available.length > 0) {
-    const actionTypes = [...new Set(available.map((a) => a.action ?? "?"))].sort();
-    lines.push(`\nAvailable actions: ${actionTypes.join(", ")}`);
+    const actionTypes = [...new Set(available.map((a) => actionToCli(a.action ?? "?")))].sort();
+    lines.push(`\nAvailable commands: ${actionTypes.join(", ")}`);
   }
 
   return lines.join("\n");
