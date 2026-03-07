@@ -33,6 +33,7 @@ const ACTION_TO_CLI: Record<string, string> = {
   start_run: "start-run",
   proceed: "proceed",
   abandon: "abandon",
+  continue_run: "continue",
   skip: "choose-card skip",
   get_state: "state",
   discard_potion: "discard-potion",
@@ -788,12 +789,19 @@ export async function startRun(client: SpireBridgeClient, character = "Ironclad"
 }
 
 export async function abandonRun(client: SpireBridgeClient): Promise<string> {
-  const resp = await client.send("abandon");
+  const resp = await client.send("abandon_run");
   if (resp.status === "error") {
     return `Error abandoning run: ${resp.error ?? resp.message}`;
   }
-
   return `Run abandoned.` + await settledState(client, 2000);
+}
+
+export async function continueRun(client: SpireBridgeClient): Promise<string> {
+  const resp = await client.send("continue_run");
+  if (resp.status === "error") {
+    return `Error continuing run: ${resp.error ?? resp.message}`;
+  }
+  return `Run continued.` + await settledState(client, 2000);
 }
 
 // ---------------------------------------------------------------------------

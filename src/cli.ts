@@ -144,6 +144,14 @@ program
   });
 
 program
+  .command("continue")
+  .description("Continue an existing run from main menu")
+  .action(async () => {
+    const { url } = program.opts<{ url: string }>();
+    await run(url, (c) => commands.continueRun(c));
+  });
+
+program
   .command("card-info <name>")
   .description("Look up detailed card information by name")
   .action(async (name: string) => {
