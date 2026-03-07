@@ -38,6 +38,7 @@ export interface Card {
   rarity?: string;
   playable?: boolean;
   exhausts?: boolean;
+  upgraded?: boolean;
 }
 
 export interface Enemy {

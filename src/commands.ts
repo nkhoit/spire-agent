@@ -24,7 +24,8 @@ const NOTES_PATH = join(__dirname, "..", "notes.md");
 function fmtPileSummary(cards: Card[]): string {
   const counts: Record<string, number> = {};
   for (const c of cards) {
-    const name = c.name ?? "?";
+    let name = c.name ?? "?";
+    if (c.upgraded) name += "+";
     counts[name] = (counts[name] ?? 0) + 1;
   }
   return Object.entries(counts)
@@ -35,6 +36,7 @@ function fmtPileSummary(cards: Card[]): string {
 
 function fmtCard(card: Card): string {
   let name = card.name ?? "?";
+  if (card.upgraded) name += "+";
   if (card.cost !== undefined) name = `${name}(${card.cost})`;
   const parts = [name];
   if (card.damage) parts.push(`dmg:${card.damage}`);
@@ -132,7 +134,8 @@ function formatFullState(state: GameState): string {
     lines.push(`\n--- Deck (${deck.length} cards) ---`);
     const counts: Record<string, number> = {};
     for (const c of deck) {
-      const name = c.name ?? "?";
+      let name = c.name ?? "?";
+      if (c.upgraded) name += "+";
       counts[name] = (counts[name] ?? 0) + 1;
     }
     const deckParts = Object.entries(counts)
