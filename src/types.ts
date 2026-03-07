@@ -13,12 +13,21 @@ export interface GameState {
   rewards?: Reward[];
   event_text?: string;
   event?: { body?: string };
+  shop?: Shop;
+}
+
+export interface Power {
+  id?: string;
+  name?: string;
+  amount?: number;
+  type?: string;
 }
 
 export interface Player {
   hp: number;
   max_hp: number;
   energy: number;
+  max_energy?: number;
   block?: number;
   hand?: Card[];
   deck?: Card[];
@@ -30,6 +39,7 @@ export interface Player {
   exhaust_pile_count?: number;
   relics?: Relic[];
   potions?: Potion[];
+  powers?: Power[];
 }
 
 export interface Card {
@@ -43,6 +53,11 @@ export interface Card {
   playable?: boolean;
   exhausts?: boolean;
   upgraded?: boolean;
+  vars?: Record<string, number>;
+  upgrade_preview?: {
+    description?: string;
+    vars?: Record<string, number>;
+  };
 }
 
 export interface Enemy {
@@ -52,6 +67,8 @@ export interface Enemy {
   block?: number;
   is_hittable?: boolean;
   intent?: Intent;
+  intents?: Intent[];
+  powers?: Power[];
 }
 
 export interface Intent {
@@ -74,6 +91,21 @@ export interface Reward {
   type: string;
   name?: string;
   gold?: number;
+}
+
+export interface ShopItem {
+  index?: number;
+  name?: string;
+  description?: string;
+  cost?: number;
+  affordable?: boolean;
+  type?: string;
+  card_type?: string;
+}
+
+export interface Shop {
+  gold?: number;
+  items?: ShopItem[];
 }
 
 export interface Action {

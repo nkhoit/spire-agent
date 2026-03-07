@@ -1,5 +1,5 @@
 import { SpireBridgeClient } from "./client.js";
-import { Action, Card, Enemy, GameState, Potion, Reward } from "./types.js";
+import { Action, Card, Enemy, GameState, Potion, Power, Reward } from "./types.js";
 import { debug } from "./debug.js";
 import {
   findActions,
@@ -17,6 +17,9 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const NOTES_PATH = join(__dirname, "..", "notes.md");
+
+// Actions that can be auto-executed without parameters
+const PARAMETERLESS = new Set(["proceed"]);
 
 // ---------------------------------------------------------------------------
 // Formatting helpers
@@ -63,6 +66,12 @@ function fmtPileSummary(cards: Card[]): string {
     .join(", ");
 }
 
+function fmtPower(power: Power): string {
+  const name = power.name ?? power.id ?? "?";
+  const amt = power.amount;
+  return amt && amt !== 1 ? `${name} ${amt}` : name;
+}
+
 function fmtCard(card: Card): string {
   let name = cardName(card);
   if (card.cost !== undefined) name = `${name}(${card.cost})`;
@@ -80,9 +89,7 @@ function fmtEnemy(enemy: Enemy): string {
   const maxHp = enemy.max_hp ?? "?";
   
   // Handle intents (array from SpireBridge) or intent (singular legacy)
-  const intents: Array<{type?: string; damage?: number; hits?: number}> = 
-    (enemy as unknown as Record<string, unknown>).intents as Array<{type?: string; damage?: number; hits?: number}> 
-    ?? (enemy.intent ? [enemy.intent] : []);
+  const intents = enemy.intents ?? (enemy.intent ? [enemy.intent] : []);
   let intentStr = "";
   if (intents.length > 0) {
     const parts: string[] = [];
@@ -102,15 +109,10 @@ function fmtEnemy(enemy: Enemy): string {
   const block = enemy.block ?? 0;
   const blockStr = block ? ` 🛡${block}` : "";
   
-  const powers = (enemy as unknown as Record<string, unknown>).powers as Array<Record<string, unknown>> | undefined;
+  const powers = enemy.powers;
   let powerStr = "";
   if (powers && powers.length > 0) {
-    const ps = powers.map(p => {
-      const name = p.name as string ?? p.id as string ?? "?";
-      const amt = p.amount as number;
-      return amt && amt !== 1 ? `${name} ${amt}` : name;
-    });
-    powerStr = ` (${ps.join(", ")})`;
+    powerStr = ` (${powers.map(fmtPower).join(", ")})`;
   }
   
   return `${name} ${hp}/${maxHp}${blockStr}${intentStr}${powerStr}`;
@@ -128,7 +130,7 @@ function formatFullState(state: GameState): string {
   const player = getPlayer(state);
   const [hp, maxHp] = playerHp(state);
   const energy = player.energy;
-  const maxEnergy = (player as unknown as Record<string, unknown>).max_energy;
+  const maxEnergy = player.max_energy;
   const block = player.block ?? 0;
   lines.push("\n--- Player ---");
   let playerLine = `HP: ${hp}/${maxHp}`;
@@ -137,14 +139,9 @@ function formatFullState(state: GameState): string {
   lines.push(playerLine);
 
   // Player powers/status effects
-  const powers = (player as unknown as Record<string, unknown>).powers as Array<Record<string, unknown>> | undefined;
+  const powers = player.powers;
   if (powers && powers.length > 0) {
-    const powerStrs = powers.map(p => {
-      const name = p.name as string ?? p.id as string ?? "?";
-      const amt = p.amount as number;
-      return amt && amt !== 1 ? `${name} ${amt}` : name;
-    });
-    lines.push(`Status: ${powerStrs.join(", ")}`);
+    lines.push(`Status: ${powers.map(fmtPower).join(", ")}`);
   }
 
   const relics = player.relics ?? [];
@@ -212,7 +209,7 @@ function formatFullState(state: GameState): string {
     cardChoices.forEach((c, i) => {
       let line = `  [${i}] ${fmtCard(c)}`;
       if (c.description) line += ` — ${c.description}`;
-      const up = (c as unknown as Record<string, unknown>).upgrade_preview as Record<string, unknown> | undefined;
+      const up = c.upgrade_preview;
       if (up?.description) line += ` → Upgraded: ${up.description}`;
       lines.push(line);
     });
@@ -264,8 +261,8 @@ function formatFullState(state: GameState): string {
   }
 
   // Shop items (use rich shop state if available, fall back to actions)
-  const shopData = (state as unknown as Record<string, unknown>).shop as Record<string, unknown> | undefined;
-  const shopItemsList = (shopData?.items as Array<Record<string, unknown>>) ?? [];
+  const shopData = state.shop;
+  const shopItemsList = shopData?.items ?? [];
   const shopActions = findActions(state, "shop_buy");
   if (shopItemsList.length > 0 || shopActions.length > 0) {
     const gold = shopData?.gold;
@@ -274,10 +271,10 @@ function formatFullState(state: GameState): string {
       for (const item of shopItemsList) {
         const cost = item.cost ?? "?";
         const affordable = item.affordable === false ? " ✗ Can't afford" : "";
-        const name = (item.name as string) ?? "item";
-        const desc = (item.description as string) ? ` — ${item.description}` : "";
-        const type = (item.type as string) ?? "";
-        const cardType = (item.card_type as string) ?? "";
+        const name = item.name ?? "item";
+        const desc = item.description ? ` — ${item.description}` : "";
+        const type = item.type ?? "";
+        const cardType = item.card_type ?? "";
         const suffix = type === "card" && cardType ? ` ${cardType}` : "";
         lines.push(`  [${item.index}] ${name} (${cost}g)${suffix}${desc}${affordable}`);
       }
@@ -451,7 +448,6 @@ async function settledState(client: SpireBridgeClient, _prevScreen?: string): Pr
   // Track screen to prevent infinite loops (don't re-execute on same screen)
   // Never auto-execute end_turn — game state can be briefly stale after card
   // animations, causing premature turn ends with playable cards still in hand.
-  const PARAMETERLESS = new Set(["proceed"]);
   const actions = (state.available_actions ?? []).filter(a => a.action !== "get_state" && a.action !== "discard_potion");
   // Map: auto-proceed to close overview (proceed closes the overview, revealing interactive map)
   if (screen === "map" && actions.some(a => a.action === "proceed") && actions.some(a => a.action === "choose_node")) {
@@ -494,7 +490,6 @@ export async function getGameState(client: SpireBridgeClient): Promise<string> {
 
   // Auto-execute if only one parameterless action available
   const actions = state.available_actions ?? [];
-  const PARAMETERLESS = new Set(["proceed", "get_state"]);
   const nonState = actions.filter(a => a.action !== "get_state");
   if (nonState.length === 1 && PARAMETERLESS.has(nonState[0].action ?? "")) {
     const action = nonState[0].action!;
@@ -929,7 +924,7 @@ function fmtCardDetailed(card: Card): string {
   if (card.rarity) lines.push(`  Rarity: ${card.rarity}`);
   if (card.exhausts) lines.push(`  Exhausts: yes`);
   if (card.description) lines.push(`  ${card.description}`);
-  const up = (card as unknown as Record<string, unknown>).upgrade_preview as Record<string, unknown> | undefined;
+  const up = card.upgrade_preview;
   if (up?.description) lines.push(`  Upgrade: ${up.description}`);
   return lines.join("\n");
 }
@@ -962,8 +957,8 @@ export async function cardInfo(client: SpireBridgeClient, cardName: string): Pro
   ];
 
   // Also search shop items as cards
-  const shopState = (state as unknown as Record<string, unknown>).shop as Record<string, unknown> | undefined;
-  const shopCards = ((shopState?.items as Array<Record<string, unknown>>) ?? [])
+  const shopState = state.shop;
+  const shopCards = (shopState?.items ?? [])
     .filter((i) => i.type === "card")
     .map((i) => i as unknown as Card);
   if (shopCards.length > 0) pools.push({ label: "Shop", cards: shopCards });
