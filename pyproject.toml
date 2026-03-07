@@ -20,9 +20,13 @@ llm = [
     "github-copilot-sdk",
     "openai",
 ]
+mcp = [
+    "mcp",
+]
 
 [project.scripts]
 spire-agent = "spire_agent.main:main"
+spire-mcp = "spire_agent.mcp_server:main"
 
 [tool.ruff]
 line-length = 100
