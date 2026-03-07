@@ -45,10 +45,10 @@ export class SpireBridgeClient {
           this.lastState = update.state;
           this.stateQueue.push(update);
           debug("ws", `push seq=${update.seq} event=${update.event} screen=${update.state?.screen}`);
-          for (const waiter of this.stateWaiters) {
+          const waiters = this.stateWaiters.splice(0);
+          for (const waiter of waiters) {
             waiter(update);
           }
-          this.stateWaiters = [];
         } else if (typeof msg["id"] === "string") {
           const rid = msg["id"];
           const pending = this.pending.get(rid);
