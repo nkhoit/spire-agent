@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import { SpireBridgeClient } from "./client.js";
+import { enableDebug } from "./debug.js";
 import * as commands from "./commands.js";
 
 const DEFAULT_URL = "ws://127.0.0.1:38642";
@@ -26,7 +27,12 @@ const program = new Command();
 program
   .name("spire-cli")
   .description("Control Slay the Spire 2 via SpireBridge")
-  .option("--url <url>", "SpireBridge WebSocket URL", DEFAULT_URL);
+  .option("--url <url>", "SpireBridge WebSocket URL", DEFAULT_URL)
+  .option("--debug", "Enable debug logging to /tmp/spire-debug.log")
+  .hook("preAction", () => {
+    const opts = program.opts<{ debug?: boolean }>();
+    if (opts.debug) enableDebug();
+  });
 
 program
   .command("state")

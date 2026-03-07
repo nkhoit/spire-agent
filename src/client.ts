@@ -1,5 +1,6 @@
 import WebSocket from "ws";
 import { ActionResponse, GameState, StateUpdate } from "./types.js";
+import { debug } from "./debug.js";
 
 interface PendingRequest {
   resolve: (value: Record<string, unknown>) => void;
@@ -43,7 +44,7 @@ export class SpireBridgeClient {
           };
           this.lastState = update.state;
           this.stateQueue.push(update);
-          process.stderr.write(`[push] seq=${update.seq} event=${update.event} screen=${update.state?.screen}\n`);
+          debug("ws", `push seq=${update.seq} event=${update.event} screen=${update.state?.screen}`);
           for (const waiter of this.stateWaiters) {
             waiter(update);
           }
@@ -104,6 +105,7 @@ export class SpireBridgeClient {
         timer,
       });
 
+    debug("ws", `send id=${rid} action=${action} params=${JSON.stringify(params ?? {})}`);
       this.ws.send(JSON.stringify(payload));
     });
   }
@@ -150,24 +152,24 @@ export class SpireBridgeClient {
   async drainUpdates(timeoutMs = 3000, quietMs = 800): Promise<GameState | null> {
     const deadline = Date.now() + timeoutMs;
     let lastReceived = 0;
-    process.stderr.write(`[drain] start, queue=${this.stateQueue.length}\n`);
+    debug("drain", `start queue=${this.stateQueue.length} timeout=${timeoutMs} quiet=${quietMs}`);
 
     while (Date.now() < deadline) {
       if (this.stateQueue.length > 0) {
         while (this.stateQueue.length > 0) {
           const update = this.stateQueue.shift()!;
           this.lastState = update.state;
-          process.stderr.write(`[drain] consumed seq=${update.seq} screen=${update.state?.screen}\n`);
+          debug("drain", `consumed seq=${update.seq} event=${update.event} screen=${update.state?.screen}`);
         }
         lastReceived = Date.now();
       }
       if (lastReceived > 0 && Date.now() - lastReceived >= quietMs) {
-        process.stderr.write(`[drain] settled after quiet\n`);
+        debug("drain", `settled after quiet, screen=${this.lastState?.screen}`);
         return this.lastState;
       }
       await new Promise((r) => setTimeout(r, 100));
     }
-    process.stderr.write(`[drain] timeout, queue=${this.stateQueue.length}\n`);
+    debug("drain", `timeout, queue=${this.stateQueue.length}`);
     while (this.stateQueue.length > 0) {
       const update = this.stateQueue.shift()!;
       this.lastState = update.state;

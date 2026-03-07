@@ -1,5 +1,6 @@
 import { SpireBridgeClient } from "./client.js";
 import { Action, Card, Enemy, GameState, Potion, Reward } from "./types.js";
+import { debug } from "./debug.js";
 import {
   findActions,
   getEnemies,
@@ -360,20 +361,23 @@ function resolvePotion(potions: (Potion | null | undefined)[], potionName: strin
 // ---------------------------------------------------------------------------
 
 async function settledState(client: SpireBridgeClient, _prevScreen?: string): Promise<string> {
-  // Wait for debounced state push from SpireBridge
+  debug("settle", `start prevScreen=${_prevScreen}`);
   await client.drainUpdates();
   let state = client.lastState;
   if (!state) return "";
 
   let screen = getScreen(state);
+  debug("settle", `after drain: screen=${screen} actions=${(state.available_actions ?? []).map(a => a.action).join(",")}`);
 
   // If push state looks stale (same screen as before action), do an active getState poll
   if (_prevScreen && screen === _prevScreen) {
+    debug("settle", `stale screen detected, polling getState`);
     const deadline = Date.now() + 3000;
     while (Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 500));
       state = await client.getState();
       screen = getScreen(state);
+      debug("settle", `poll: screen=${screen}`);
       if (screen !== _prevScreen) break;
     }
   }
@@ -384,6 +388,7 @@ async function settledState(client: SpireBridgeClient, _prevScreen?: string): Pr
     (screen === "combat" && getPlayer(state).energy === undefined);
 
   if (looksIncomplete) {
+    debug("settle", `incomplete state, polling`);
     const deadline = Date.now() + 3000;
     while (Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 500));
@@ -398,8 +403,10 @@ async function settledState(client: SpireBridgeClient, _prevScreen?: string): Pr
   // Track screen to prevent infinite loops (don't re-execute on same screen)
   const PARAMETERLESS = new Set(["proceed", "end_turn"]);
   const actions = (state.available_actions ?? []).filter(a => a.action !== "get_state" && a.action !== "discard_potion");
+  debug("settle", `auto-exec check: actions=[${actions.map(a=>a.action)}] screen=${screen} prevScreen=${_prevScreen}`);
   if (actions.length === 1 && PARAMETERLESS.has(actions[0].action ?? "") && screen !== _prevScreen) {
     const action = actions[0].action!;
+    debug("settle", `auto-executing: ${action}`);
     const resp = await client.send(action);
     if (resp.status !== "error") {
       const cli = ACTION_TO_CLI[action] ?? action;
@@ -408,6 +415,7 @@ async function settledState(client: SpireBridgeClient, _prevScreen?: string): Pr
     }
   }
 
+  debug("settle", `done: screen=${screen}`);
   return "\n\n" + formatFullState(state);
 }
 
