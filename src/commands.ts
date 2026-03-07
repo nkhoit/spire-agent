@@ -434,7 +434,7 @@ async function settledState(client: SpireBridgeClient, _prevScreen?: string): Pr
 
   // Combat: wait for player's play phase (enemy animations + card draw must complete)
   if (screen === "combat") {
-    const deadline = Date.now() + 15000;
+    const deadline = Date.now() + 25000;
     while (Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 500));
       state = await client.getState();
