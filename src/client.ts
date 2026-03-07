@@ -142,8 +142,27 @@ export class SpireBridgeClient {
     });
   }
 
-  async drainUpdates(waitMs = 300): Promise<GameState | null> {
-    await new Promise((r) => setTimeout(r, waitMs));
+  /**
+   * Wait for the next state_update push, up to timeoutMs.
+   * Returns the settled state, or lastState if no push arrives.
+   */
+  async drainUpdates(timeoutMs = 2500): Promise<GameState | null> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      if (this.stateQueue.length > 0) {
+        // Drain all queued updates, keep the latest
+        while (this.stateQueue.length > 0) {
+          const update = this.stateQueue.shift()!;
+          this.lastState = update.state;
+        }
+        // Wait a bit more in case another push follows quickly
+        await new Promise((r) => setTimeout(r, 300));
+        if (this.stateQueue.length > 0) continue;
+        return this.lastState;
+      }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    // Timeout — drain whatever we have
     while (this.stateQueue.length > 0) {
       const update = this.stateQueue.shift()!;
       this.lastState = update.state;
