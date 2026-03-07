@@ -48,13 +48,20 @@ program
   .option("--target <enemy>", "Target enemy name (for single card)")
   .action(async (cards: string[], opts: { target?: string }) => {
     const { url } = program.opts<{ url: string }>();
-    // If single card with --target, use playCard; otherwise parse comma-separated or multiple args
     const joined = cards.join(" ");
     const specs = joined.includes(",") ? joined.split(",") : cards.length === 1 ? [joined] : cards;
     if (specs.length === 1 && !specs[0].includes(" ")) {
       await run(url, (c) => commands.playCard(c, specs[0].trim(), opts.target));
     } else {
-      await run(url, (c) => commands.playCards(c, specs.map(s => s.trim())));
+      // Append --target to each spec that doesn't already have a target
+      const finalSpecs = specs.map(s => {
+        const trimmed = s.trim();
+        if (opts.target && !trimmed.includes(" ")) {
+          return `${trimmed} ${opts.target}`;
+        }
+        return trimmed;
+      });
+      await run(url, (c) => commands.playCards(c, finalSpecs));
     }
   });
 
