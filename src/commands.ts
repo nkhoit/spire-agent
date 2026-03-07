@@ -211,6 +211,7 @@ function formatFullState(state: GameState): string {
     cardChoices.forEach((c, i) => {
       let line = `  [${i}] ${fmtCard(c)}`;
       if (c.description) line += ` — ${c.description}`;
+      if ((c as unknown as Record<string, unknown>).upgrade_preview) line += ` → Upgraded: ${(c as unknown as Record<string, unknown>).upgrade_preview}`;
       lines.push(line);
     });
   }
@@ -839,6 +840,8 @@ function fmtCardDetailed(card: Card): string {
   if (card.rarity) lines.push(`  Rarity: ${card.rarity}`);
   if (card.exhausts) lines.push(`  Exhausts: yes`);
   if (card.description) lines.push(`  ${card.description}`);
+  const up = (card as unknown as Record<string, unknown>).upgrade_preview;
+  if (up) lines.push(`  Upgrade: ${up}`);
   return lines.join("\n");
 }
 
