@@ -9,12 +9,10 @@ from ..state import (
     GameState,
     find_actions,
     get_actions,
-    get_enemies,
     get_hand,
     get_hittable_enemies,
     get_screen,
     incoming_damage,
-    player_energy,
     player_hp,
 )
 from .base import Strategy
@@ -32,7 +30,7 @@ class HeuristicStrategy(Strategy):
     4. End turn when out of energy or no good plays
     """
 
-    def decide(self, state: GameState) -> dict[str, Any] | None:
+    async def decide(self, state: GameState) -> dict[str, Any] | None:
         screen = get_screen(state)
         actions = get_actions(state)
 
@@ -48,7 +46,6 @@ class HeuristicStrategy(Strategy):
 
     def _handle_combat(self, state: GameState, actions: list) -> dict | None:
         hp, max_hp = player_hp(state)
-        energy = player_energy(state)
         enemies = get_hittable_enemies(state)
         inc_dmg = incoming_damage(state)
 

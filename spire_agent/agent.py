@@ -6,7 +6,7 @@ import asyncio
 import logging
 
 from .client import SpireBridgeClient
-from .state import find_actions, get_screen, get_actions
+from .state import get_screen
 from .strategy.base import Strategy
 from .strategy.heuristic import HeuristicStrategy
 
@@ -71,7 +71,7 @@ class Agent:
                 return
 
             try:
-                action = self.strategy.decide(state)
+                action = await self.strategy.decide(state)
             except Exception:
                 logger.exception("Strategy error on screen %s", screen)
                 await asyncio.sleep(1)

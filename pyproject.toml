@@ -16,6 +16,10 @@ dev = [
     "ruff",
     "pytest",
 ]
+llm = [
+    "github-copilot-sdk",
+    "openai",
+]
 
 [project.scripts]
 spire-agent = "spire_agent.main:main"

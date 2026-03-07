@@ -12,7 +12,7 @@ class Strategy(ABC):
     """Abstract strategy — decides what action to take given game state."""
 
     @abstractmethod
-    def decide(self, state: GameState) -> dict[str, Any] | None:
+    async def decide(self, state: GameState) -> dict[str, Any] | None:
         """Return an action dict or None to wait.
 
         The returned dict must include an 'action' key matching a SpireBridge

@@ -5,8 +5,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from collections.abc import AsyncIterator, Callable
-from dataclasses import dataclass, field
+from collections.abc import AsyncIterator
+from dataclasses import dataclass
 from typing import Any
 
 import websockets
