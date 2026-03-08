@@ -200,4 +200,15 @@ program
     console.log(commands.writeNote(text));
   });
 
+program
+  .command("console <command...>")
+  .description("Run a dev console command")
+  .action(async (args: string[]) => {
+    const command = args.join(" ");
+    await run(program.opts().url, async (client) => {
+      const resp = await client.send("console", { command });
+      return JSON.stringify(resp, null, 2);
+    });
+  });
+
 program.parse();
